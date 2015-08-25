@@ -77,8 +77,33 @@ sub edit_substitute {
 	
 	#update history
 	my $edit =  {type=>'substitution', coord=>$pos, seq=>$sub, len=>$sublen};
-	$edit->{$original} = $original if defined $original;
+	$edit->{original} = $original if defined $original;
 	push @{$self->{_edit_history}}, $edit;
+}
+
+sub edit_complex {
+	my $self = shift;
+
+	my $sub = shift;
+	my $pos = shift;
+	my $original = shift;
+
+	carp("Provide 3 arguments, substitution, position and original")
+		unless defined $sub && defined $pos && defined $original;
+	
+	return $self->edit_substitute($sub, $pos, $original) if length($original) == length($sub);
+
+	my $sublen = length $sub;
+	my $edit =  {type=>'complex', coord=>$pos, seq=>$sub, len=>$sublen, original=>$original, orilen=>length($original)};
+
+	#update history
+	if( $self->insdel_overlap($edit)) {
+		warn "Edit overlaps previous edit DISCARDING!\n";
+	} else {
+		push @{$self->{_edit_history}}, $edit;
+	}
+
+
 }
 
 sub insdel_overlap {
@@ -95,23 +120,28 @@ sub insdel_overlap {
 	my $newmin = $new->{coord};
 
 	#the end coord we only need if it's a del
-	my $newmax = $new->{type} eq "deletion" ? $new->{coord} + $new->{len} -1 : $newmin;
+	my $newmax = $newmin;
+	$newmax = $new->{coord} + $new->{len} -1  if $new->{type} eq "deletion";
+	$newmax = $new->{coord} + $new->{orilen} -1 if $new->{type} eq "complex";
 
 	#check all previous edits
 	foreach my $edit (sort { $b->{coord} <=> $a->{coord} } @{$self->{_edit_history}}) {
-	given ($edit->{type}) {
-		when("insertion") {
-			my $min = $edit->{coord};
-			return 1 if ($min > $newmin && $min <= $newmax);
-			
+		given ($edit->{type}) {
+			when("insertion") {
+				my $min = $edit->{coord};
+				return 1 if ($min > $newmin && $min <= $newmax);
+			}
+			when("deletion") {
+				my $min = $edit->{coord};
+				my $max = $edit->{coord} + $edit->{len} - 1;
+				return 1 if ($newmin >= $min && $newmin <= $max)  || ($newmax >= $min && $newmax <=$max);
+			}
+			when("complex") {
+				my $min = $edit->{coord};
+				my $max = $edit->{coord} + $edit->{orilen} - 1;
+				return 1 if ($newmin >= $min && $newmin <= $max)  || ($newmax >= $min && $newmax <=$max);
+			}
 		}
-		when("deletion") {
-			
-			my $min = $edit->{coord};
-			my $max = $edit->{coord} + $edit->{len} - 1;
-			return 1 if ($newmin >= $min && $newmin <= $max)  || ($newmax >= $min || $newmax <=$max);
-		}
-	}
 	}
 
 	return 0;
@@ -143,10 +173,17 @@ sub editedseq {
 					delete $map{$c};
 				}
 			}
+			when("complex") {
+				#delete the deletion part, put the ins in the queue
+				for my $c ($edit->{coord} .. ($edit->{coord} + $edit->{orilen} - 1)) {
+					delete $map{$c};
+				}
+				push @insertions, {type=>'insertion', coord=>$edit->{coord}-1 , seq=>$edit->{seq}, len=>$edit->{len}};
+			}
 			when("substitution") {
 				#substitute using the original coordinates in the original string map doesn't change
 				my $replaced = substr $oriseq, $edit->{coord}-1, $edit->{len}, $edit->{seq};
-				if (exists $edit->{original}) {
+				if (exists $edit->{original} && $replaced ne $edit->{original}) {
 					warn "Replaced seq ($replaced) doesn't match supplied original ($edit->{original})\n";
 				}
 			}

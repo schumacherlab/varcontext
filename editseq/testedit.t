@@ -18,7 +18,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;                      # last test to print
+use Test::More tests => 20;                      # last test to print
 
 BEGIN	{
 	use_ok( 'EditSeq' );
@@ -58,7 +58,20 @@ $es = EditSeq->new($s);
 $es->edit_insert("123",10);
 is($es->editedseq, "abcdefghij123", "insert at end");
 
+$s = "abcdefghij";
+$es = EditSeq->new($s);
+$es->edit_complex("123",4, "def");
+is($es->editedseq, "abc123ghij", "even length complex(=substitution)");
 
+$s = "abcdefghij";
+$es = EditSeq->new($s);
+$es->edit_complex("1234",4, "de");
+is($es->editedseq, "abc1234fghij", "uneven complex");
+
+
+
+
+#multiple edits
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_substitute("12",5);
@@ -87,17 +100,36 @@ $es->edit_insert("12",5);
 $es->edit_delete("f",6);
 is($es->editedseq, "abcde12ghij", "del flanking insert");
 
+$es = EditSeq->new($s);
+$es->edit_substitute("Q",6);
+$es->edit_complex("123",3, "cd");
+is($es->editedseq, "ab123eQghij", "complex before substitution");
+
+$es = EditSeq->new($s);
+$es->edit_substitute("Q",6);
+$es->edit_complex("123",7, "ghi");
+is($es->editedseq, "abcdeQ123j", "complex flankin substitution");
+
+$es = EditSeq->new($s);
+$es->edit_delete("fgh",6);
+$es->edit_complex("123",3, "cd");
+is($es->editedseq, "ab123eij", "complex before delete");
+
+$es = EditSeq->new($s);
+$es->edit_delete("bc",2);
+$es->edit_complex("123",6, "fg");
+is($es->editedseq, "ade123hij", "complex after delete");
+
 #try an overlap
 $es = EditSeq->new($s);
 $es->edit_insert("12",5);
-$es->edit_delete("defg",4);
+$es->edit_delete("defg",4); #overlap causes this to be discarded
 is($es->editedseq, "abcde12fghij", "overlap1");
 
 $es = EditSeq->new($s);
 $es->edit_delete("defg",4);
-$es->edit_insert("12",5);
+$es->edit_insert("12",5); #overlap causes this to be discarded
 is($es->editedseq, "abchij", "overlap2");
-
 
 
 
