@@ -18,7 +18,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 24;                      # last test to print
+use Test::More tests => 36;                      # last test to print
 
 BEGIN	{
 	use_ok( 'EditSeq' );
