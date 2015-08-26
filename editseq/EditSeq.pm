@@ -1,20 +1,4 @@
 package EditSeq;
-#
-#===============================================================================
-#
-#         FILE: EditSeq.pm
-#
-#  DESCRIPTION: 
-#
-#        FILES: ---
-#         BUGS: ---
-#        NOTES: ---
-#       AUTHOR: Arno Velds (), a.velds@nki.nl
-#      COMPANY: NKI
-#      VERSION: 1.0
-#      CREATED: 04/04/2012 02:44:02 PM
-#     REVISION: ---
-#===============================================================================
 
 use strict;
 use warnings;
@@ -26,6 +10,7 @@ use Carp;
 
 sub edit_insert {
 	my $self = shift;
+	croak "Sequence has applied edits,  cannot edit anymore" if exists $self->{editedseq};
 
 	my $ins = shift;
 	my $pos = shift;
@@ -47,6 +32,7 @@ sub edit_insert {
 
 sub edit_delete {
 	my $self = shift;
+	croak "Sequence has applied edits,  cannot edit anymore" if exists $self->{editedseq};
 
 	my $del = shift;
 	my $pos = shift;
@@ -68,6 +54,7 @@ sub edit_delete {
 
 sub edit_substitute {
 	my $self = shift;
+	croak "Sequence has applied edits,  cannot edit anymore" if exists $self->{editedseq};
 
 	my $sub = shift;
 	my $pos = shift;
@@ -83,6 +70,7 @@ sub edit_substitute {
 
 sub edit_complex {
 	my $self = shift;
+	croak "Sequence has applied edits,  cannot edit anymore" if exists $self->{editedseq};
 
 	my $sub = shift;
 	my $pos = shift;
@@ -147,8 +135,9 @@ sub insdel_overlap {
 	return 0;
 }
 
-sub editedseq {
+sub apply_edits {
 	my $self = shift;
+	croak "Sequence has edits already applied." if exists $self->{editedseq};
 
 	return ($self->{seq}, undef) unless $self->hasedits;
 
@@ -159,10 +148,9 @@ sub editedseq {
 	#create a map of original coordinates to string coordinates
 	my %map = map {$_=>$_-1} (1 .. length $oriseq);
 
-	#order all edits based on coords
+	#order all edits based on decreasing coords
 	my @insertions = ();
 	foreach my $edit (sort { $b->{coord} <=> $a->{coord} } @{$self->{_edit_history}}) {
-		#print STDERR "Applying", Dumper($edit);
 		given ($edit->{type}) {
 			when("insertion") {
 				#delay insertions to end
@@ -184,7 +172,7 @@ sub editedseq {
 				#substitute using the original coordinates in the original string map doesn't change
 				my $replaced = substr $oriseq, $edit->{coord}-1, $edit->{len}, $edit->{seq};
 				if (exists $edit->{original} && $replaced ne $edit->{original}) {
-					warn "Replaced seq ($replaced) doesn't match supplied original ($edit->{original})\n";
+					carp "Replaced seq ($replaced) doesn't match supplied original ($edit->{original})\n";
 				}
 			}
 		}
@@ -207,15 +195,84 @@ sub editedseq {
 	}
 
 	#any inserts left?
-	die "Didn't process all insertions? overlaps?\n" if scalar(keys(%inscoord)) > 0;
+	croak("Didn't process all insertions? overlaps?\n") if scalar(keys(%inscoord)) > 0;
 
 	#the coordinate map now maps the new sequence to the original positions.
+	#store 2 lookup table for coordinate conversion functions
+	my %mapedit2original = map { $_ => $coordmap[$_]} 0 .. $#coordmap; 
+	my %maporiginal2edit = map { $coordmap[$_] => $_ } 0 .. $#coordmap; 
 
-	return ($newseq, \@coordmap) if wantarray;
+	#print Dumper("edit2ori", \%mapedit2original, "ori2edit", \%maporiginal2edit);
+	
+
+	$self->{editedseq} = $newseq;
+	$self->{mapedit2original} = \%mapedit2original;
+	$self->{maporiginal2edit} = \%maporiginal2edit;
+
 	return $newseq;
-
-
 }
+
+sub convert_position_to_original {
+	my $self = shift;
+	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+
+	#go from 1 based to 0 based string coordinates
+	my $coord = shift(@_) - 1;
+	
+	croak "No coordinate provided" unless defined $coord;
+	#coordinates should be in range of edited sequence
+	croak "Coordinate out of range" if $coord <= 0 || $coord > length($self->{editedseq});
+
+	my $oricoord = $self->{mapedit2original}->{$coord};
+	
+	return $oricoord == -1 ? -1 : $oricoord + 1;
+}
+
+#this sub will deliver the lowest coordinate in the edited string that is still available
+sub convert_position_to_edit {
+	my $self = shift;
+	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+
+	#go from 1 based to 0 based string coordinates
+	my $coord = shift(@_) - 1;
+	
+	croak "No coordinate provided" unless defined $coord;
+	#coordinates should be in range of original sequence
+	croak "Coordinate out of range" if $coord <= 0 || $coord > length($self->{seq});
+
+	my $newcoord = 	$self->{maporiginal2edit}->{$coord};
+	return $newcoord + 1 if defined $newcoord && $newcoord >=0;
+
+	#if not found step left until coord=0
+	while($coord != 0) {
+		$newcoord = $self->{maporiginal2edit}->{--$coord};
+		return $newcoord + 1 if defined $newcoord && $newcoord >=0;
+	}
+	
+	return 1;
+}
+
+sub substring_ori {
+	my $self = shift;
+
+	#go from 1 based to 0 based string coordinates
+	my $start = shift(@_) -1;
+	my $length = shift;
+	
+	return substr $self->{seq}, $start, $length;
+}
+
+sub substring_edited {
+	my $self = shift;
+	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+
+	my $oristart = shift;;
+	my $length = shift;
+
+	return substr $self->{editedseq}, $self->convert_position_to_edit($oristart) - 1, $length;
+}
+
+
 
 sub hasedits {
 	my $self = shift;

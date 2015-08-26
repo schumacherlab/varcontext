@@ -18,7 +18,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;                      # last test to print
+use Test::More tests => 24;                      # last test to print
 
 BEGIN	{
 	use_ok( 'EditSeq' );
@@ -28,45 +28,46 @@ BEGIN	{
 my $s = "abcdefghij";
 my $es = EditSeq->new($s);
 $es->edit_substitute("123",5);
-my ($seq, $map) = $es->editedseq;
-print join("\n", map {join("=>", $_, $map->[$_])} 1 .. $#$map) ,"\n";
-is($seq, "abcd123hij", "substitute");
+is($es->apply_edits, "abcd123hij", "substitute");
 
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_substitute("12345",8);
-is($es->editedseq, "abcdefg123", "substitute beyond end");
+is($es->apply_edits, "abcdefg123", "substitute beyond end");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_delete("def",4);
-is($es->editedseq, "abcghij", "delete");
+is($es->apply_edits, "abcghij", "delete");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_delete("fghijkl",6);
-is($es->editedseq, "abcde", "delete beyond end");
+is($es->apply_edits, "abcde", "delete beyond end");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_insert("123",4);
-is($es->editedseq, "abcd123efghij", "insert");
+is($es->apply_edits, "abcd123efghij", "insert");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_insert("123",10);
-is($es->editedseq, "abcdefghij123", "insert at end");
+is($es->apply_edits, "abcdefghij123", "insert at end");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_complex("123",4, "def");
-is($es->editedseq, "abc123ghij", "even length complex(=substitution)");
+is($es->apply_edits, "abc123ghij", "even length complex(=substitution)");
 
 $s = "abcdefghij";
 $es = EditSeq->new($s);
 $es->edit_complex("1234",4, "de");
-is($es->editedseq, "abc1234fghij", "uneven complex");
+is($es->apply_edits, "abc1234fghij", "uneven complex");
+is($es->substring_ori(3,3), "cde", "substring_ori");
+is($es->substring_edited(3,3), "c12", "substring_edited");
+is($es->substring_edited(6,3), "fgh", "substring_edited 2");
 
 
 
@@ -74,62 +75,89 @@ is($es->editedseq, "abc1234fghij", "uneven complex");
 #multiple edits
 $s = "abcdefghij";
 $es = EditSeq->new($s);
+$es->edit_insert("12",3);
+$es->edit_insert("34",6);
+is($es->apply_edits, "abc12def34ghij", "two inserts");
+
+$es = EditSeq->new($s);
 $es->edit_substitute("12",5);
 $es->edit_delete("defgh",4);
-is($es->editedseq, "abcij", "delete substitution");
+is($es->apply_edits, "abcij", "delete substitution");
 
 $es = EditSeq->new($s);
 $es->edit_substitute("12",5);
 $es->edit_delete("bcd",2);
-is($es->editedseq, "a12ghij", "sub flanking del");
+is($es->apply_edits, "a12ghij", "sub flanking del");
 
 $es = EditSeq->new($s);
 $es->edit_substitute("12",5);
 $es->edit_delete("h",8);
-is($es->editedseq, "abcd12gij", "sub after del");
+is($es->apply_edits, "abcd12gij", "sub after del");
 
 $es = EditSeq->new($s);
 $es->edit_insert("12",5);
 $es->edit_delete("h",8);
-my ($seq, $map) = $es->editedseq;
-print join("\n", map {join("=>", $_, $map->[$_])} 1 .. $#$map) ,"\n";
-is($seq, "abcde12fgij", "del after insert");
+is($es->apply_edits, "abcde12fgij", "del after insert");
 
 $es = EditSeq->new($s);
 $es->edit_insert("12",5);
 $es->edit_delete("f",6);
-is($es->editedseq, "abcde12ghij", "del flanking insert");
+is($es->apply_edits, "abcde12ghij", "del flanking insert");
 
 $es = EditSeq->new($s);
 $es->edit_substitute("Q",6);
 $es->edit_complex("123",3, "cd");
-is($es->editedseq, "ab123eQghij", "complex before substitution");
+is($es->apply_edits, "ab123eQghij", "complex before substitution");
 
 $es = EditSeq->new($s);
 $es->edit_substitute("Q",6);
 $es->edit_complex("123",7, "ghi");
-is($es->editedseq, "abcdeQ123j", "complex flankin substitution");
+is($es->apply_edits, "abcdeQ123j", "complex flankin substitution");
 
 $es = EditSeq->new($s);
 $es->edit_delete("fgh",6);
 $es->edit_complex("123",3, "cd");
-is($es->editedseq, "ab123eij", "complex before delete");
+is($es->apply_edits, "ab123eij", "complex before delete");
 
 $es = EditSeq->new($s);
 $es->edit_delete("bc",2);
 $es->edit_complex("123",6, "fg");
-is($es->editedseq, "ade123hij", "complex after delete");
+is($es->apply_edits, "ade123hij", "complex after delete");
 
 #try an overlap
 $es = EditSeq->new($s);
 $es->edit_insert("12",5);
 $es->edit_delete("defg",4); #overlap causes this to be discarded
-is($es->editedseq, "abcde12fghij", "overlap1");
+is($es->apply_edits, "abcde12fghij", "overlap1");
 
 $es = EditSeq->new($s);
 $es->edit_delete("defg",4);
 $es->edit_insert("12",5); #overlap causes this to be discarded
-is($es->editedseq, "abchij", "overlap2");
+is($es->apply_edits, "abchij", "overlap2");
+
+#test the position map
+#abcdijklZZZZZmnoqqrstu
+#abcdefghijklmnopqrstu
+#fix to a-u
+$es = EditSeq->new("abcdijklZZZZZmnoqqrstu");
+$es->edit_insert("efgh",4);
+$es->edit_delete("ZZZZZ",9);
+$es->edit_substitute("p",17);
+is($es->apply_edits, "abcdefghijklmnopqrstu", "triple edit");
+
+is($es->convert_position_to_original(4),4);
+is($es->convert_position_to_original(5),-1);
+is($es->convert_position_to_original(11),7);
+is($es->convert_position_to_original(21),22);
+is($es->convert_position_to_original(6),-1);
+
+is($es->convert_position_to_edit(4),4);
+is($es->convert_position_to_edit(5),9);
+is($es->convert_position_to_edit(9),12);
+is($es->convert_position_to_edit(11),12);
+is($es->convert_position_to_edit(13),12);
+is($es->convert_position_to_edit(17),16);
+
 
 
 
