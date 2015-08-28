@@ -31,22 +31,6 @@ use Variant;
 use VariantSet;
 use ensembl;
 
-#use Text::CSV;
-#my $vs = VariantSet->new();
-#
-#my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
-#                     or die "Cannot use CSV: ".Text::CSV->error_diag ();
-#my $file = "/net/Analysis/data/ni.v.rooij/melanomapairs/data/exome/tcgacolon/20150820\ colo\ msi\ pos/TCGA-A6-3809.csv";
-#
-#open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
-#$csv->column_names ($csv->getline ($fh));
-#while ( my $row = $csv->getline( $fh ) ) {
-#	my $v = Variant->new(chr=>$row->[2], start=>$row->[3], end=>$row->[4], ref=>$row->[5] =~ s/-//g, alt=>$row->[6]=~ s/-//g);
-#	$vs->add($v);
-#}
-#$csv->eof or $csv->error_diag();
-#close $fh;
-#
 
 my $vs = VariantSet->new();
 my $v = Variant->new(chr=>17, start=>7577540, end=>7577541, ref=>"G", alt=>"");
