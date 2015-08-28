@@ -252,6 +252,13 @@ sub convert_position_to_edit {
 	return 1;
 }
 
+sub edited_seq {
+	my $self = shift;
+	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+
+	return $self->{editedseq};
+}
+
 sub substring_ori {
 	my $self = shift;
 

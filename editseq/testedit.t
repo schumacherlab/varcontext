@@ -27,7 +27,7 @@ BEGIN	{
 #simple single edits
 my $s = "abcdefghij";
 my $es = EditSeq->new($s);
-$es->edit_substitute("123",5);
+$es->edit_substitute("123",5, "efg");
 is($es->apply_edits, "abcd123hij", "substitute");
 
 
