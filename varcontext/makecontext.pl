@@ -25,7 +25,8 @@ use utf8;
 use Data::Dumper;
 
 
-use lib("./");
+use FindBin;
+use lib ("$FindBin::Bin","$FindBin::Bin/../editseq" );
 
 use Variant;
 use VariantSet;
