@@ -26,7 +26,8 @@ sub new {
 		-host =>  'legion',
 		-user =>  'ensro',
 		-pass =>  'ensro',
-		-verbose=>0
+		-verbose=>0,
+		-mysql_skip_secure_auth=>1
 	);
 
 	my $sa = Bio::EnsEMBL::Registry->get_adaptor("human","core","slice");
@@ -50,6 +51,28 @@ sub get_Transcripts_for_Variant {
 	return $slice->get_all_Transcripts;
 }
 
+sub get_genomic_elongation_for_Transcript {
+	my $self = shift;
+	my $t = shift;
+	my $length = shift || 1000;
+
+	croak "Transcript must be type Bio::EnsEMBL::Transcript" unless ref $t eq "Bio::EnsEMBL::Transcript";
+
+	#get the slice from the transcript
+	my $slice = $t->slice;
+	my $start = $t->strand == -1 ? $t->coding_region_start - $length : $t->coding_region_end + 1;
+	my $end =  $t->strand == -1 ? $t->coding_region_start - 1 : $t->coding_region_end + $length;
+
+	#subset slice
+	my $subslice = $slice->sub_Slice($start, $end);
+	my $seq = $subslice->seq;
+	#reverse complement if on reverse strand
+	if( $t->strand == -1) {
+		$seq = reverse $seq;
+		$seq =~ tr/[CGAT]/[GCTA]/;
+	}
+	return $seq;
+}
 
 
 1;
