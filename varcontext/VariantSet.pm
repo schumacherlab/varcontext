@@ -105,11 +105,15 @@ sub apply_variants {
 	}
 }
 
+# I have some issues with this sub.
+# I think it should be split in a per transcript cdna->peptide part
+# followed by the subsetting
+# This would also avoid double work when multiple variants affect the same transcript.
 sub print_variant_context {
 	my $self = shift;
 
 	#print header
-	print join("\t", qw/chr start end ref alt transcriptid cdna_context_ref cdna_context_alt peptide_context_ref peptide_context_alt codingchanges/), "\n";
+	print join("\t", qw/chr start end ref alt transcriptid cdna_context_ref cdna_context_alt peptide_context_ref peptide_context_alt remark/), "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -121,6 +125,33 @@ sub print_variant_context {
 			my $refpepseq = $refcdnabioseq->translate->seq;
 			my $tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 			my $tumorpepseq = $tumorcdnabioseq->translate->seq;
+			
+			#find the location of the (first) stop codon
+			my $stopindex = index $tumorpepseq, "*";
+			my $stoplost = 0;
+			if($stopindex == -1) {
+				$stoplost = 1;
+				#stop is lost, append genomic data
+				my $extra = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, 100);
+				$tumorcdna .= $extra;
+				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
+				$tumorpepseq = $tumorcdnabioseq->translate->seq;
+				print STDERR "$refpepseq\n";
+				print STDERR "$tumorpepseq\n";
+				$stopindex = index $tumorpepseq, "*";
+				croak "too little bases added, fix code" if $stopindex == -1;
+				print STDERR "Added '$extra' to $tid\n"
+			}
+			#if we moved the stop site we need to redo the peptide generation
+			if( $stopindex != length($tumorpepseq) -1) {
+				print STDERR "clipping extra to $stopindex ".length($tumorpepseq)  . " $tid\n";
+				$tumorcdna = substr $tumorcdna,0, (($stopindex+1)*3);
+				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
+				$tumorpepseq = $tumorcdnabioseq->translate->seq;
+				$stopindex = index $tumorpepseq, "*";
+				croak "too little bases added, fix code" if $stopindex == -1;
+			}
+			
 
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
 			my $tumorcdnastart = $es->convert_position_to_edit($refcdnastart);
@@ -131,32 +162,53 @@ sub print_variant_context {
 
 			#make the context coords
 			#prepare the string coordinates to clip from (substring is zero based)
+			
+			my %result;
+			#reference cdna
 			my $stringrefstart = $refcdnastart - $CDNACONTEXTSIZE - 1;
 			$stringrefstart = 0 if $stringrefstart < 0;
-			my $stringtumorstart = $tumorcdnastart-$CDNACONTEXTSIZE -1;
-			$stringtumorstart = 0 if $stringtumorstart < 0;
+			$result{cdna_context_ref} = substr($refcdna, $stringrefstart, $CDNACONTEXTSIZE*2);
 
+			#reference peptide
 			my $stringrefpepstart = $refpepstart - $PEPCONTEXTSIZE - 1;
 			$stringrefpepstart = 0 if $stringrefpepstart < 0;
+			$result{peptide_context_ref} = substr($refpepseq, $stringrefpepstart, $PEPCONTEXTSIZE*2);
+
+			#tumor peptide	
 			my $stringtumorpepstart = $tumorpepstart - $PEPCONTEXTSIZE - 1;
 			$stringtumorpepstart = 0 if $stringtumorpepstart < 0;
+			if($tumorpepstart <= $stopindex) {
+				#if this variant induced a frame shift or mutated the stop codon clip until stop
+				if(($tumorpepstart == length($refpepseq)) || (exists $v->{effect} && $v->{effect} eq 'frameshift')) {
+					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart);
+				} else {
+					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
+				}
+			} else {
+				$result{peptide_context_alt} = "-";
+				$result{remark} = "Context after new stop codon";
+			}
 			
-			#FIXME previous version did longer clips on frameshift effects.
+			#tumor cdna
+			my $stringtumorstart = $tumorcdnastart-$CDNACONTEXTSIZE -1;
+			$stringtumorstart = 0 if $stringtumorstart < 0;
+			if($tumorpepstart <= $stopindex) {
+				$result{cdna_context_alt} = substr($tumorcdna, $stringtumorstart, $CDNACONTEXTSIZE*2);
+			} else {
+				$result{cdna_context_alt} = "-";
+			}
 		
-			#prepare row result
-			my @results = map {$v->{$_}} qw/chr start end ref alt/;
-			push @results, $tid;
-			#add substrings to result
-			push @results, substr($refcdna, $stringrefstart, $CDNACONTEXTSIZE*2);
-			push @results, substr($tumorcdna, $stringtumorstart, $CDNACONTEXTSIZE*2);
-			push @results, substr($refpepseq, $stringrefpepstart, $PEPCONTEXTSIZE*2);
-			push @results, substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
+			#add remaining info
+			$result{$_} = $v->{$_} // "" foreach qw/chr start end ref alt type effect/;
+			$result{tid} = $tid;
 
-			push @results, $results[-1] eq $results[-2] ? "identical" : "codingchanges";
+			if(!exists $result{remark}) {
+				$result{remark} = $result{peptide_context_ref} eq $result{peptide_context_alt} ? "identical" : "codingchanges";
+			}
 
 
 			#get the context
-			print join("\t", @results), "\n";
+			print join("\t", map {$result{$_}} qw/chr start end ref alt type tid cdna_context_ref cdna_context_alt peptide_context_ref peptide_context_alt remark effect/), "\n";
 		}
 	}
 }
