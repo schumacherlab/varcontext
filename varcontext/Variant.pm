@@ -15,29 +15,45 @@ sub new {
 
 	my %setters = @_;
 
-	#required fields:chr start ref, alt
-	foreach (qw/chr start end ref alt/) {
-		$self->{$_} = $setters{$_} if exists $setters{$_};
+	carp "Provide chr start ref alt when constructing variant"
+		unless defined $setters{chr} && defined $setters{start} && defined $setters{ref} && defined $setters{alt};
+
+	$self->{$_} = $setters{$_} foreach qw/chr start ref alt/;
+	
+	#trim left identical bases for ref alt combo
+	my $minlength  = length($self->{ref}) < length($self->{alt}) ? length($self->{ref}) : length($self->{alt});
+	my $pos = 0;
+	while($minlength > 0 && $pos < $minlength) {
+		last if substr($self->{ref},$pos,1) ne substr($self->{alt},$pos,1);
+		$pos++;
+	}
+	if($pos > 0 && $pos == $minlength) {
+		croak "Variant '" . $self->to_string . "' has identical ref/alt pair (not a variant)";
+	} elsif ($pos > 0) {
+		$self->{ref} = substr $self->{ref}, $pos;
+		$self->{alt} = substr $self->{alt}, $pos;
+		$self->{start} += $pos;
 	}
 
 	#infer type
-	if (length($setters{ref}) == length($setters{alt})) {
+	if (length($self->{ref}) == length($self->{alt})) {
 		$self->{type} = "substitution";
-	} elsif (length($setters{ref}) < length($setters{alt})) {
+	} elsif (length($self->{ref}) == 0 && length($self->{alt}) > 0) {
 		$self->{type} = "insertion";
-	} else {
+	} elsif (length($self->{ref}) > 0 && length($self->{alt}) == 0) {
 		$self->{type} = "deletion";
+	} else {
+		$self->{type} = "complex";
 	}
 
-	#calc end if not present
+	#calc end
 	$self->{end} = $self->{start}  + length($setters{ref}) -1 ;
 
+	#prepare target maps
 	$self->{affected_transcriptids} = {};
 	$self->{transcript_map} = {};
 	
-
 	return $self;
-	
 }
 
 sub reverse_alt {
@@ -153,14 +169,18 @@ sub apply_to_Transcript {
 		}
 		when("insertion") {
 			$es->edit_insert($alt, $start);
+			$self->{effect} = (length($self->{alt}) % 3) == 0 ? "inframe" : "frameshift"
 		}
 		when("deletion") {
 			$es->edit_delete($ref, $start);
+			$self->{effect} = (length($self->{ref}) % 3) == 0 ? "inframe" : "frameshift"
 		}
 		when("complex") {
 			$es->edit_complex($alt, $start, $ref);
+			$self->{effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? "inframe" : "frameshift"
 		}
 	}
+
 	return 1;
 	
 }
@@ -168,7 +188,7 @@ sub apply_to_Transcript {
 sub to_string {
 	my $self = shift;
 
-	return join(" ", map {$self->{$_}} qw/chr start end ref alt/);
+	return join(" ", map {$self->{$_} // ""} qw/chr start end ref alt type/);
 }
 
 
