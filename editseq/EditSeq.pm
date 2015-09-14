@@ -221,7 +221,7 @@ sub convert_position_to_original {
 	
 	croak "No coordinate provided" unless defined $coord;
 	#coordinates should be in range of edited sequence
-	croak "Coordinate out of range" if $coord <= 0 || $coord > length($self->{editedseq});
+	croak "Coordinate out of range" if $coord < 0 || $coord > length($self->{editedseq});
 
 	my $oricoord = $self->{mapedit2original}->{$coord};
 	
@@ -238,7 +238,7 @@ sub convert_position_to_edit {
 	
 	croak "No coordinate provided" unless defined $coord;
 	#coordinates should be in range of original sequence
-	croak "Coordinate out of range" if $coord <= 0 || $coord > length($self->{seq});
+	croak "Coordinate out of range (pos=$coord)" if $coord < 0 || $coord > length($self->{seq});
 
 	my $newcoord = 	$self->{maporiginal2edit}->{$coord};
 	return $newcoord + 1 if defined $newcoord && $newcoord >=0;
