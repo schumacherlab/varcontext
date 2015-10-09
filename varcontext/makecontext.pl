@@ -34,15 +34,19 @@ use ensembl;
 
 
 my $vs = VariantSet->new();
-my $v = Variant->new(chr=>17, start=>7577540, end=>7577541, ref=>"G", alt=>"");
-$vs->add($v);
-my $v2 = Variant->new(chr=>17, start=>7577552, end=>7577554, ref=>"CAT", alt=>"GCA");
-$vs->add($v2);
-my $v3 = Variant->new(chr=>10, start=>89720860, ref=>"T", alt=>"A");
-$vs->add($v3);
-#stop lost
-my $v4 = Variant->new(chr=>10, start=>89725228, ref=>"G", alt=>"C");
-$vs->add($v4);
+#my $v = Variant->new(chr=>17, start=>7577540, end=>7577541, ref=>"G", alt=>"");
+#$vs->add($v);
+#my $v2 = Variant->new(chr=>17, start=>7577552, end=>7577554, ref=>"CAT", alt=>"GCA");
+#$vs->add($v2);
+#my $v3 = Variant->new(chr=>10, start=>89720860, ref=>"T", alt=>"A");
+#$vs->add($v3);
+##stop lost
+#my $v4 = Variant->new(chr=>10, start=>89725228, ref=>"G", alt=>"C");
+#$vs->add($v4);
+##mutate first base
+my $v5 = Variant->new(chr=>1, start=>99127288, ref=>"A", alt=>"G");
+$vs->add($v5);
+
 
 $vs->group_variants;
 $vs->apply_variants;

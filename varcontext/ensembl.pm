@@ -5,7 +5,7 @@ use warnings;
 use Carp;
  
 use FindBin;
-use lib ("$FindBin::Bin", map {"/net/bioinf/ensembl/ens72/". $_} qw(ensembl/modules
+use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_75/". $_} qw(ensembl/modules
 	ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
@@ -23,7 +23,7 @@ sub new {
 	my $registry = 'Bio::EnsEMBL::Registry';
 
 	$registry->load_registry_from_db(
-		-host =>  'legion',
+		-host =>  '0.0.0.0',
 		-user =>  'ensro',
 		-pass =>  'ensro',
 		-verbose=>0,

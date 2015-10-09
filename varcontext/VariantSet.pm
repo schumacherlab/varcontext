@@ -17,11 +17,15 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
+	my %args = @_;
+
 	$self->{variants} = [];
 	$self->{stuffadded} = 1;
 
 	#prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
+
+	$self->{canonical} = exists $args{canonical} ? $args{canonical} : 0;
 
 	return $self;
 }
@@ -50,6 +54,9 @@ sub group_variants {
 				next if $attrib && $attrib->value;
 				($attrib) = @{$t->get_all_Attributes("CDS_end_NF")};
 				next if $attrib && $attrib->value;
+
+				#canonical only?
+				next if $self->{canonical} && !$t->is_canonical;
 
 				#store it
 				#refetch the transcript for correct slice attachment. This can probably also be
@@ -132,19 +139,15 @@ sub print_variant_context {
 			if($stopindex == -1) {
 				$stoplost = 1;
 				#stop is lost, append genomic data
-				my $extra = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, 100);
+				my $extra = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, 1000);
 				$tumorcdna .= $extra;
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
-				print STDERR "$refpepseq\n";
-				print STDERR "$tumorpepseq\n";
 				$stopindex = index $tumorpepseq, "*";
 				croak "too little bases added, fix code" if $stopindex == -1;
-				print STDERR "Added '$extra' to $tid\n"
 			}
 			#if we moved the stop site we need to redo the peptide generation
 			if( $stopindex != length($tumorpepseq) -1) {
-				print STDERR "clipping extra to $stopindex ".length($tumorpepseq)  . " $tid\n";
 				$tumorcdna = substr $tumorcdna,0, (($stopindex+1)*3);
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
