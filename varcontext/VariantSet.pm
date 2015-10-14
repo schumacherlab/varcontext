@@ -25,7 +25,8 @@ sub new {
 	#prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
 
-	$self->{canonical} = exists $args{canonical} ? $args{canonical} : 0;
+	$self->{options}->{canonical} = exists $args{canonical} ? $args{canonical} : 0;
+	$self->{options}->{fullpeptide} = exists $args{fullpeptide} ? $args{fullpeptide} : 0;
 
 	return $self;
 }
@@ -56,7 +57,7 @@ sub group_variants {
 				next if $attrib && $attrib->value;
 
 				#canonical only?
-				next if $self->{canonical} && !$t->is_canonical;
+				next if $self->{options}->{canonical} && !$t->is_canonical;
 
 				#store it
 				#refetch the transcript for correct slice attachment. This can probably also be
@@ -154,6 +155,8 @@ sub print_variant_context {
 				$stopindex = index $tumorpepseq, "*";
 				croak "too little bases added, fix code" if $stopindex == -1;
 			}
+			my %result;
+			$result{peptide_seq} = $tumorpepseq;
 			
 
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
@@ -166,7 +169,6 @@ sub print_variant_context {
 			#make the context coords
 			#prepare the string coordinates to clip from (substring is zero based)
 			
-			my %result;
 			#reference cdna
 			my $stringrefstart = $refcdnastart - $CDNACONTEXTSIZE - 1;
 			$stringrefstart = 0 if $stringrefstart < 0;
@@ -176,6 +178,8 @@ sub print_variant_context {
 			my $stringrefpepstart = $refpepstart - $PEPCONTEXTSIZE - 1;
 			$stringrefpepstart = 0 if $stringrefpepstart < 0;
 			$result{peptide_context_ref} = substr($refpepseq, $stringrefpepstart, $PEPCONTEXTSIZE*2);
+			#refpepcoord <- 
+			$result{peptide_pos_ref} = $stringrefpepstart;
 
 			#tumor peptide	
 			my $stringtumorpepstart = $tumorpepstart - $PEPCONTEXTSIZE - 1;
@@ -187,7 +191,9 @@ sub print_variant_context {
 				} else {
 					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
 				}
+				$result{peptide_pos_alt} = $stringtumorpepstart;
 			} else {
+				$result{peptide_pos_alt} = "-";
 				$result{peptide_context_alt} = "-";
 				$result{remark} = "Context after new stop codon";
 			}
@@ -209,9 +215,11 @@ sub print_variant_context {
 				$result{remark} = $result{peptide_context_ref} eq $result{peptide_context_alt} ? "identical" : "codingchanges";
 			}
 
+			my @printcolumns = qw/chr start end ref alt type tid cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
+			push @printcolumns, "peptide_seq" if $self->{options}->{fullpeptide};
 
 			#get the context
-			print join("\t", map {$result{$_}} qw/chr start end ref alt type tid cdna_context_ref cdna_context_alt peptide_context_ref peptide_context_alt remark effect/), "\n";
+			print join("\t", map {$result{$_}} @printcolumns ), "\n";
 		}
 	}
 }
