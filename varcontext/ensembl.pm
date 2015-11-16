@@ -5,7 +5,7 @@ use warnings;
 use Carp;
  
 use FindBin;
-use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_75/". $_} qw(ensembl/modules
+use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_81/". $_} qw(ensembl/modules
 	ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
@@ -72,6 +72,18 @@ sub get_genomic_elongation_for_Transcript {
 		$seq =~ tr/[CGAT]/[GCTA]/;
 	}
 	return $seq;
+}
+
+sub transcript_info {
+	my $self = shift;
+	my $tid = shift;
+
+	my $t = $self->{ta}->fetch_by_stable_id($tid);
+
+	return undef unless defined $t;
+
+	return ($t->get_Gene()->stable_id, $t->external_name);
+
 }
 
 

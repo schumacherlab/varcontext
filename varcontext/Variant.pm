@@ -27,12 +27,14 @@ sub new {
 		last if substr($self->{ref},$pos,1) ne substr($self->{alt},$pos,1);
 		$pos++;
 	}
-	if($pos > 0 && $pos == $minlength) {
-		croak "Variant '" . $self->to_string . "' has identical ref/alt pair (not a variant)";
-	} elsif ($pos > 0) {
+	if ($pos > 0) {
 		$self->{ref} = substr $self->{ref}, $pos;
 		$self->{alt} = substr $self->{alt}, $pos;
 		$self->{start} += $pos;
+	}
+
+	if($self->{ref} eq $self->{alt}) {
+		croak "Not a variant (ref/alt identical):" . $self->to_string;
 	}
 
 	#infer type

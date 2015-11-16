@@ -121,7 +121,7 @@ sub print_variant_context {
 	my $self = shift;
 
 	#print header
-	print join("\t", qw/chr start end ref alt transcriptid cdna_context_ref cdna_context_alt peptide_context_ref peptide_context_alt remark/), "\n";
+	print join("\t", qw/chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -210,12 +210,13 @@ sub print_variant_context {
 			#add remaining info
 			$result{$_} = $v->{$_} // "" foreach qw/chr start end ref alt type effect/;
 			$result{tid} = $tid;
+			($result{geneid}, $result{externalname}) = $self->{ens}->transcript_info($tid);
 
 			if(!exists $result{remark}) {
 				$result{remark} = $result{peptide_context_ref} eq $result{peptide_context_alt} ? "identical" : "codingchanges";
 			}
 
-			my @printcolumns = qw/chr start end ref alt type tid cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
+			my @printcolumns = qw/chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
 			push @printcolumns, "peptide_seq" if $self->{options}->{fullpeptide};
 
 			#get the context
