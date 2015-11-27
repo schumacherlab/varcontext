@@ -121,7 +121,7 @@ sub print_variant_context {
 	my $self = shift;
 
 	#print header
-	print join("\t", qw/chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq" : ""),  "\n";
+	print join("\t", qw/chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -135,9 +135,12 @@ sub print_variant_context {
 			my $tumorpepseq = $tumorcdnabioseq->translate->seq;
 			
 			#find the location of the (first) stop codon
+			#sometimes the reference sequence also lacks a stopcodon. If this is the case do not extend the
+			#tumor peptide sequence
+			my $stopindex_ref = index $refpepseq, "*";
 			my $stopindex = index $tumorpepseq, "*";
 			my $stoplost = 0;
-			if($stopindex == -1) {
+			if($stopindex == -1 && $stopindex_ref != -1) {
 				$stoplost = 1;
 				#stop is lost, append genomic data
 				my $extra = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, 1000);
@@ -148,7 +151,7 @@ sub print_variant_context {
 				croak "too little bases added, fix code" if $stopindex == -1;
 			}
 			#if we moved the stop site we need to redo the peptide generation
-			if( $stopindex != length($tumorpepseq) -1) {
+			if( $stoplost && $stopindex != length($tumorpepseq) -1) {
 				$tumorcdna = substr $tumorcdna,0, (($stopindex+1)*3);
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
@@ -156,7 +159,8 @@ sub print_variant_context {
 				croak "too little bases added, fix code" if $stopindex == -1;
 			}
 			my %result;
-			$result{peptide_seq} = $tumorpepseq;
+			$result{peptide_seq_ref} = $refpepseq;
+			$result{peptide_seq_alt} = $tumorpepseq;
 			
 
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
@@ -179,29 +183,29 @@ sub print_variant_context {
 			$stringrefpepstart = 0 if $stringrefpepstart < 0;
 			$result{peptide_context_ref} = substr($refpepseq, $stringrefpepstart, $PEPCONTEXTSIZE*2);
 			#refpepcoord <- 
-			$result{peptide_pos_ref} = $stringrefpepstart;
+			$result{peptide_pos_ref} = $refpepstart;
 
 			#tumor peptide	
 			my $stringtumorpepstart = $tumorpepstart - $PEPCONTEXTSIZE - 1;
 			$stringtumorpepstart = 0 if $stringtumorpepstart < 0;
-			if($tumorpepstart <= $stopindex) {
+			if($tumorpepstart <= ($stopindex+ 1)) {
 				#if this variant induced a frame shift or mutated the stop codon clip until stop
 				if(($tumorpepstart == length($refpepseq)) || (exists $v->{effect} && $v->{effect} eq 'frameshift')) {
 					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart);
 				} else {
 					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
 				}
-				$result{peptide_pos_alt} = $stringtumorpepstart;
+				$result{peptide_pos_alt} = $tumorpepstart;
 			} else {
 				$result{peptide_pos_alt} = "-";
 				$result{peptide_context_alt} = "-";
-				$result{remark} = "Context after new stop codon";
+				$result{remark} = "variant after gained stop";
 			}
 			
 			#tumor cdna
 			my $stringtumorstart = $tumorcdnastart-$CDNACONTEXTSIZE -1;
 			$stringtumorstart = 0 if $stringtumorstart < 0;
-			if($tumorpepstart <= $stopindex) {
+			if($tumorpepstart <= ($stopindex +1)) {
 				$result{cdna_context_alt} = substr($tumorcdna, $stringtumorstart, $CDNACONTEXTSIZE*2);
 			} else {
 				$result{cdna_context_alt} = "-";
@@ -217,7 +221,7 @@ sub print_variant_context {
 			}
 
 			my @printcolumns = qw/chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
-			push @printcolumns, "peptide_seq" if $self->{options}->{fullpeptide};
+			push @printcolumns, ("peptide_seq_ref", "peptide_seq_alt") if $self->{options}->{fullpeptide};
 
 			#get the context
 			print join("\t", map {$result{$_}} @printcolumns ), "\n";
