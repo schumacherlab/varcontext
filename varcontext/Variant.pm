@@ -19,6 +19,8 @@ sub new {
 		unless defined $setters{chr} && defined $setters{start} && defined $setters{ref} && defined $setters{alt};
 
 	$self->{$_} = $setters{$_} foreach qw/chr start ref alt/;
+
+	$self->{id} = $setters{id} if exists $setters{id};
 	
 	#trim left identical bases for ref alt combo
 	my $minlength  = length($self->{ref}) < length($self->{alt}) ? length($self->{ref}) : length($self->{alt});
