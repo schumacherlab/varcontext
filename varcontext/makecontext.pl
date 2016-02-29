@@ -44,7 +44,15 @@ my $vs = VariantSet->new();
 #my $v4 = Variant->new(chr=>10, start=>89725228, ref=>"G", alt=>"C");
 #$vs->add($v4);
 ##mutate first base
-my $v5 = Variant->new(chr=>1, start=>99127288, ref=>"A", alt=>"G");
+#my $v5 = Variant->new(chr=>1, start=>99127288, ref=>"A", alt=>"G");
+#$vs->add($v5);
+
+#stop lost forward strand
+#my $v5 = Variant->new(chr=>12, start=>6538169, ref=>"A", alt=>"C");
+#$vs->add($v5);
+
+#stop lost reverse strand
+my $v5 = Variant->new(chr=>12, start=>6540483, ref=>"C", alt=>"G");
 $vs->add($v5);
 
 

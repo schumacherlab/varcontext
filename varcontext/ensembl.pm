@@ -58,20 +58,32 @@ sub get_genomic_elongation_for_Transcript {
 
 	croak "Transcript must be type Bio::EnsEMBL::Transcript" unless ref $t eq "Bio::EnsEMBL::Transcript";
 
-	#get the slice from the transcript
+	my $seq = "";
 	my $slice = $t->slice;
-	my $start = $t->strand == -1 ? $t->coding_region_start - $length : $t->coding_region_end + 1;
-	my $end =  $t->strand == -1 ? $t->coding_region_start - 1 : $t->coding_region_end + $length;
+	my $extended = 0;
 
-	#subset slice
-	my $subslice = $slice->sub_Slice($start, $end);
-	my $seq = $subslice->seq;
-	#reverse complement if on reverse strand
-	if( $t->strand == -1) {
-		$seq = reverse $seq;
-		$seq =~ tr/[CGAT]/[GCTA]/;
+	while(1) {
+		#get the slice from the transcript
+		my $start = $t->strand == -1 ? $t->coding_region_start - $extended - 100 : $t->coding_region_end + 1 + $extended;
+		my $end =  $t->strand == -1 ? $t->coding_region_start - $extended - 1 : $t->coding_region_end + 100 + $extended;
+		#print STDERR "adding 100bp : $start - $end\n";
+
+		#subset slice
+		my $subslice = $slice->sub_Slice($start, $end);
+		my $eseq = $subslice->seq;
+		#reverse complement if on reverse strand
+		if( $t->strand == -1) {
+			$eseq = reverse $eseq;
+			$eseq =~ tr/[CGAT]/[GCTA]/;
+		}
+		$seq .= $eseq;
+
+		#find a stop in this seq:
+		while($seq =~ m/(TAG|TAA|TGA)/g) {
+			return $seq if $-[0] % 3 == 0;
+		}
+		$extended += 100;
 	}
-	return $seq;
 }
 
 sub transcript_info {
