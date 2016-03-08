@@ -3,6 +3,7 @@ package EditSeq;
 use strict;
 use warnings;
 
+no if ($] >= 5.018), 'warnings' => 'experimental';
 use 5.012;
 
 use Data::Dumper;
@@ -46,7 +47,7 @@ sub edit_delete {
 	#update history
 	my $edit = {type=>'deletion', coord=>$pos, seq=>$del, len=>$dellen};
 	if( $self->insdel_overlap($edit)) {
-		warn "Edit overlaps previous edit DISCARDING!\n";
+		# warn "Edit overlaps previous edit DISCARDING!\n";
 	} else {
 		push @{$self->{_edit_history}}, $edit;
 	}
