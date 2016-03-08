@@ -195,13 +195,12 @@ sub print_variant_context {
 				#if this variant induced a frame shift or mutated the stop codon clip until stop
 				if(($tumorpepstart == length($refpepseq)) || (exists $v->{effect} && $v->{effect} eq 'frameshift')) {
 					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart);
-					$result{peptide_pos_alt_start} = $tumorpepstart;
 					$result{peptide_pos_alt_stop} = length($tumorpepseq);
 				} else {
 					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
-					$result{peptide_pos_alt_start} = $tumorpepstart;
 					$result{peptide_pos_alt_stop} = $tumorpepstart;
 				}
+				$result{peptide_pos_alt_start} = $tumorpepstart;
 			} else {
 				$result{peptide_pos_alt_start} = "-";
 				$result{peptide_pos_alt_stop} = "-";
