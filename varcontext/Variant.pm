@@ -37,7 +37,7 @@ sub new {
 	}
 
 	if($self->{ref} eq $self->{alt}) {
-		croak $self->{id} . "# Not a variant (ref/alt identical): '" . $self->to_string . "'";
+		croak $self->{id} . " # Not a variant (ref/alt identical): '" . $self->to_string . "'";
 	}
 
 	#infer type
@@ -95,7 +95,7 @@ sub map_to_Transcript {
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{id} . "# More than 1 coordinate returned for '" . $self->to_string . "'";
+		carp $self->{id} . " # More than 1 coordinate returned for '" . $self->to_string . "'";
 		return;
 	}
 
@@ -131,7 +131,7 @@ sub map_to_transcriptid {
 		return ($self->{transcript_map}->{$tid}->{start},
 		        $self->{transcript_map}->{$tid}->{end});
 	} else {
-		croak "Not yet mapped. Need to call Variant->map_to_Transcript with a Ensmembl Transcript object";
+		croak "Not yet mapped. Need to call Variant->map_to_Transcript with a Ensembl Transcript object";
 	}
 }
 

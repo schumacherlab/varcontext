@@ -25,7 +25,7 @@ sub edit_insert {
 	#update history
 	my $edit =  {type=>'insertion', coord=>$pos, seq=>$ins, len=>$inslen};
 	if( $self->insdel_overlap($edit)) {
-		warn "Edit overlaps previous edit DISCARDING!\n";
+		# warn "Edit overlaps previous edit DISCARDING!\n";
 	} else {
 		push @{$self->{_edit_history}}, $edit;
 	}
@@ -87,7 +87,7 @@ sub edit_complex {
 
 	#update history
 	if( $self->insdel_overlap($edit)) {
-		warn "Edit overlaps previous edit DISCARDING!\n";
+		# warn "Edit overlaps previous edit DISCARDING!\n";
 	} else {
 		push @{$self->{_edit_history}}, $edit;
 	}
@@ -215,7 +215,7 @@ sub apply_edits {
 
 sub convert_position_to_original {
 	my $self = shift;
-	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+	croak "Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	#go from 1 based to 0 based string coordinates
 	my $coord = shift(@_) - 1;
@@ -232,7 +232,7 @@ sub convert_position_to_original {
 #this sub will deliver the lowest coordinate in the edited string that is still available
 sub convert_position_to_edit {
 	my $self = shift;
-	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+	croak "Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	#go from 1 based to 0 based string coordinates
 	my $coord = shift(@_) - 1;
@@ -255,7 +255,7 @@ sub convert_position_to_edit {
 
 sub edited_seq {
 	my $self = shift;
-	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+	croak "Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	return $self->{editedseq};
 }
@@ -272,7 +272,7 @@ sub substring_ori {
 
 sub substring_edited {
 	my $self = shift;
-	croak "Sequence edits not yet applies, call editseq->apply_edits first" unless exists $self->{editedseq};
+	croak "Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	my $oristart = shift;;
 	my $length = shift;

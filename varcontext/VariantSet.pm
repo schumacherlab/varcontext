@@ -79,7 +79,7 @@ sub group_variants {
 sub apply_variants {
 	my $self = shift;
 
-	croak "Run group_variants before applying context. Variant set not cleaidn"
+	croak "Run group_variants before applying context. Variant set not clean"
 		if $self->{stuffadded};
 
 	#loop over all transcripts
