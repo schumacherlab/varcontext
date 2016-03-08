@@ -3,6 +3,7 @@ package Variant;
 use strict;
 use warnings;
 
+no if ($] >= 5.018), 'warnings' => 'experimental';
 use 5.012;
 
 use Carp;
