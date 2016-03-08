@@ -36,7 +36,7 @@ sub new {
 	}
 
 	if($self->{ref} eq $self->{alt}) {
-		croak "Not a variant (ref/alt identical):" . $self->to_string;
+		croak $self->{id} . "# Not a variant (ref/alt identical): '" . $self->to_string . "'";
 	}
 
 	#infer type
@@ -92,10 +92,9 @@ sub map_to_Transcript {
 	
 	#let do some tests and die on exceptions
 	if(scalar @coords != 1) {
-		print STDERR Dumper(\@coords);
+		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp("More than 1 coordinate returned for '" . 
-			$self->to_string . "' on " . $tr->stable_id);
+		carp $self->{id} . "# More than 1 coordinate returned for '" . $self->to_string . "'";
 		return;
 	}
 
@@ -160,7 +159,7 @@ sub apply_to_Transcript {
 
 	#map my coordinates to transcript
 	my ($start, $end) = $self->map_to_Transcript($tr);
-	#print STDERR "start=$start, end=$end\n";
+	# print STDERR "start=$start, end=$end\n";
 	return 0 unless defined $start && defined $end;
 
 	#if the transcript is on the reverse strand we need to reverse the variant
@@ -197,4 +196,5 @@ sub to_string {
 
 
 1;
+
 
