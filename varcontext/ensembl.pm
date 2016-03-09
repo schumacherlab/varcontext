@@ -5,7 +5,7 @@ use warnings;
 use Carp;
  
 use FindBin;
-use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_81/". $_} qw(ensembl/modules
+use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_75/". $_} qw(ensembl/modules
 	ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
@@ -62,6 +62,10 @@ sub get_genomic_elongation_for_Transcript {
 	my $slice = $t->slice;
 	my $extended = 0;
 
+	my $stop = qr/(TAG|TAA|TGA)/;
+	my $stopreverse = qr/(CTA|TTA|TCA)/;
+
+	my $usestop = $t->strand == -1 ? $stopreverse : $stop;
 	while(1) {
 		#get the slice from the transcript
 		my $start = $t->strand == -1 ? $t->coding_region_start - $extended - 100 : $t->coding_region_end + 1 + $extended;
@@ -79,7 +83,7 @@ sub get_genomic_elongation_for_Transcript {
 		$seq .= $eseq;
 
 		#find a stop in this seq:
-		while($seq =~ m/(TAG|TAA|TGA)/g) {
+		while($seq =~ /$usestop/g) {
 			return $seq if $-[0] % 3 == 0;
 		}
 		$extended += 100;
