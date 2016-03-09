@@ -146,8 +146,7 @@ sub print_variant_context {
 			if($stopindex == -1 && $stopindex_ref != -1) {
 				$stoplost = 1;
 				#stop is lost, append genomic data
-				my $extra = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, $tumorcdna);
-				$tumorcdna .= $extra;
+				$tumorcdna = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, $tumorcdna);
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
 				$stopindex = index $tumorpepseq, "*";
