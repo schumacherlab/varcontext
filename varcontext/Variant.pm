@@ -103,18 +103,15 @@ sub map_to_Transcript {
 	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
 	if($coords[0]->{id} ne "cdna") {
-		croak("Mapped coord is not cdna for '" . 
-			$self->to_string . "' on " . $tr->stable_id);
+		croak("Mapped coord is not cdna for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
 	if(not defined $coords[0]->{start}) {
-		croak("Start coord not on mapped for '" . 
-			$self->to_string . "' on " . $tr->stable_id);
+		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
 	if(not defined $coords[0]->{end}) {
-		croak("End coord not on mapped for '" . 
-			$self->to_string . "' on " . $tr->stable_id);
+		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
 	$self->{transcript_map}->{$tr->stable_id}->{start} = $coords[0]->{start};
@@ -174,14 +171,17 @@ sub apply_to_Transcript {
 		when("insertion") {
 			$es->edit_insert($alt, $start);
 			$self->{effect} = (length($self->{alt}) % 3) == 0 ? "inframe" : "frameshift"
+			$self->{type} = $self->{type} . "_" . $self->{effect};
 		}
 		when("deletion") {
 			$es->edit_delete($ref, $start);
 			$self->{effect} = (length($self->{ref}) % 3) == 0 ? "inframe" : "frameshift"
+			$self->{type} = $self->{type} . "_" . $self->{effect};
 		}
 		when("complex") {
 			$es->edit_complex($alt, $start, $ref);
 			$self->{effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? "inframe" : "frameshift"
+			$self->{type} = $self->{type} . "_" . $self->{effect};
 		}
 	}
 
