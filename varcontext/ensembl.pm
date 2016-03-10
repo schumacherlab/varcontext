@@ -94,7 +94,7 @@ sub transcript_info {
 
 	return undef unless defined $t;
 
-	my $g = $t->get_Gene()
+	my $g = $t->get_Gene;
 
 	return ($g->stable_id, $g->stable_id->external_name);
 
