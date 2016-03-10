@@ -123,7 +123,7 @@ sub print_variant_context {
 	#print header
 	# print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
   	
-  	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
+  	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type remark peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {

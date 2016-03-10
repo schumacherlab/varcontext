@@ -171,17 +171,17 @@ sub apply_to_Transcript {
 		when("insertion") {
 			$es->edit_insert($alt, $start);
 			$self->{effect} = (length($self->{alt}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{type} . "_" . $self->{effect};
+			$self->{type} = $self->{effect} . "_" . $self->{type};
 		}
 		when("deletion") {
 			$es->edit_delete($ref, $start);
 			$self->{effect} = (length($self->{ref}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{type} . "_" . $self->{effect};
+			$self->{type} = $self->{effect} . "_" . $self->{type};
 		}
 		when("complex") {
 			$es->edit_complex($alt, $start, $ref);
 			$self->{effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{type} . "_" . $self->{effect};
+			$self->{type} = $self->{effect} . "_" . $self->{type};
 		}
 	}
 
