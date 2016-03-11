@@ -180,7 +180,7 @@ sub print_variant_context {
 				$result{codon_alt} = $v->{type} eq "substitution" ? substr($tumorcdna,$tumorcodonstart,3) : "";
 				$result{aa_ref} = $codontable->translate($result{codon_ref});
 				$result{aa_alt} = $codontable->translate($result{codon_alt});
-				$v{type} = $result{aa_ref} eq $result{aa_alt} ? "silent_mutation" : "missense_mutation";
+				$v->{type} = $result{aa_ref} eq $result{aa_alt} ? "silent_mutation" : "missense_mutation";
 				#check translated codon to substr in pepseq
 				if ($result{aa_ref} ne substr($refpepseq, $refpepstart,1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart,1) ) {
 					my $tr = substr($refpepseq, $refpepstart,1);
