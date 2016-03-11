@@ -8,9 +8,11 @@ use Carp;
 use ensembl;
 use EditSeq;
 use Bio::Seq;
+use Bio::Tools::CodonTable;
 
 my $CDNACONTEXTSIZE = 54;
 my $PEPCONTEXTSIZE = $CDNACONTEXTSIZE / 3 + 1;
+my $codontable   = Bio::Tools::CodonTable->new();
 
 sub new {
 	my $class = shift;	
@@ -121,7 +123,7 @@ sub print_variant_context {
 	my $self = shift;
 
 	#print header
-	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
+	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect codon_ref codon_alt aa_ref aa_alt/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -160,14 +162,31 @@ sub print_variant_context {
 			my %result;
 			$result{peptide_seq_ref} = $refpepseq;
 			$result{peptide_seq_alt} = $tumorpepseq;
-			
 
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
 			my $tumorcdnastart = $es->convert_position_to_edit($refcdnastart);
 
 			#this translates to aa residue nr
-			my $refpepstart = int(($refcdnastart -1)/ 3)+1;
-			my $tumorpepstart = int(($tumorcdnastart -1)/ 3)+1;
+			my $refpepstart = int(($refcdnastart - ($refcdnastart %3))/ 3);
+			my $tumorpepstart = int(($tumorcdnastart - ($tumorcdnastart %3))/ 3);
+
+			#cut the codons for the results table
+			my $refcodonstart = $refcdnastart - ($refcdnastart %3);
+			my $tumorcodonstart = $tumorcdnastart - ($tumorcdnastart %3);
+			if( $v->{type} eq "substitution") {
+				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna,$refcodonstart,3) : "";
+				$result{codon_alt} = $v->{type} eq "substitution" ? substr($tumorcdna,$tumorcodonstart,3) : "";
+				$result{aa_ref} = $codontable->translate($result{codon_ref});
+				$result{aa_alt} = $codontable->translate($result{codon_alt});
+				#check translated codon to substr in pepseq
+				if ($result{aa_ref} ne substr($refpepseq, $refpepstart,1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart,1) ) {
+					my $tr = substr($refpepseq, $refpepstart,1);
+					my $ta = substr($tumorpepseq, $tumorpepstart,1);
+					croak "Codon mismatch ( $result{aa_ref} / $result{aa_alt} ) vs. ( $tr / $ta ) for " . $v->to_string();
+				}
+			} else {
+				$result{$_} = "" for qw/codon_ref codon_alt aa_ref aa_alt/;
+			}
 
 			#make the context coords
 			#prepare the string coordinates to clip from (substring is zero based)
@@ -184,7 +203,7 @@ sub print_variant_context {
 			#refpepcoord <- 
 			$result{peptide_pos_ref} = $refpepstart;
 
-			#tumor peptide	
+			#tumor peptide
 			my $stringtumorpepstart = $tumorpepstart - $PEPCONTEXTSIZE - 1;
 			$stringtumorpepstart = 0 if $stringtumorpepstart < 0;
 			if($tumorpepstart <= ($stopindex+ 1)) {
@@ -219,7 +238,7 @@ sub print_variant_context {
 				$result{remark} = $result{peptide_context_ref} eq $result{peptide_context_alt} ? "identical" : "codingchanges";
 			}
 
-			my @printcolumns = qw/id chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
+			my @printcolumns = qw/id chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect codon_ref codon_alt aa_ref aa_alt/;
 			push @printcolumns, ("peptide_seq_ref", "peptide_seq_alt") if $self->{options}->{fullpeptide};
 
 			#get the context
