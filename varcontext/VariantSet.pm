@@ -168,16 +168,20 @@ sub print_variant_context {
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
 			my $tumorcdnastart = $es->convert_position_to_edit($refcdnastart);
 
-			#this translates to aa residue nr
-			my $refpepstart = int(($refcdnastart - ($refcdnastart %3))/ 3);
-			my $tumorpepstart = int(($tumorcdnastart - ($tumorcdnastart %3))/ 3);
-
 			#cut the codons for the results table
-			my $refcodonstart = $refcdnastart - ($refcdnastart %3);
-			my $tumorcodonstart = $tumorcdnastart - ($tumorcdnastart %3);
+			my $refcodonstart = int($refcdnastart - (($refcdnastart - 1) %3));
+			my $tumorcodonstart = int($tumorcdnastart - (($tumorcdnastart - 1) %3));
+
+			#this translates to aa residue nr
+			my $refpepstart = int($refcodonstart/ 3);
+			my $tumorpepstart = int($tumorcodonstart/ 3);
+			
+			print $refcodonstart;
+			print $tumorcodonstart;
+
 			if( $v->{type} eq "substitution") {
-				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna,$refcodonstart,3) : "";
-				$result{codon_alt} = $v->{type} eq "substitution" ? substr($tumorcdna,$tumorcodonstart,3) : "";
+				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna, $refcodonstart - 1, 3) : "";
+				$result{codon_alt} = $v->{type} eq "substitution" ? substr($tumorcdna, $tumorcodonstart - 1, 3) : "";
 				$result{aa_ref} = $codontable->translate($result{codon_ref});
 				$result{aa_alt} = $codontable->translate($result{codon_alt});
 				$v->{type} = $result{aa_ref} eq $result{aa_alt} ? "silent_mutation" : "missense_mutation";
