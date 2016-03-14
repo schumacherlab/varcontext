@@ -125,7 +125,7 @@ sub print_variant_context {
 	#print header
 	# print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 
-	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type remark codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
+	print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type_effect remark codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -237,7 +237,7 @@ sub print_variant_context {
 			}
 		
 			#add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/id chr start end ref alt type effect/;
+			$result{$_} = $v->{$_} // "" foreach qw/id chr start end ref alt type effect type_effect/;
 			$result{tid} = $tid;
 			($result{geneid}, $result{externalname}) = $self->{ens}->transcript_info($tid);
 
@@ -247,7 +247,7 @@ sub print_variant_context {
 
 			# my @printcolumns = qw/id chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
 
-			my @printcolumns = qw/id chr start end ref alt tid geneid externalname type remark codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/;
+			my @printcolumns = qw/id chr start end ref alt tid geneid externalname type_effect remark codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/;
 			push @printcolumns, ("peptide_seq_ref", "peptide_seq_alt") if $self->{options}->{fullpeptide};
 
 			#get the context

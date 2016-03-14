@@ -166,22 +166,22 @@ sub apply_to_Transcript {
 
 	given($self->{type}) {
 		when("substitution") {
-			$es->edit_substitute($alt, $start, $ref);
+			$es->edit_substitute($alt, $start, $ref)
 		}
 		when("insertion") {
 			$es->edit_insert($alt, $start);
 			$self->{effect} = (length($self->{alt}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{effect} . "_" . $self->{type};
+			$self->{type_effect} = (length($self->{alt}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 		when("deletion") {
 			$es->edit_delete($ref, $start);
 			$self->{effect} = (length($self->{ref}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{effect} . "_" . $self->{type};
+			$self->{type_effect} = (length($self->{ref}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 		when("complex") {
 			$es->edit_complex($alt, $start, $ref);
 			$self->{effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? "inframe" : "frameshift";
-			$self->{type} = $self->{effect} . "_" . $self->{type};
+			$self->{type_effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 	}
 
@@ -192,7 +192,7 @@ sub apply_to_Transcript {
 sub to_string {
 	my $self = shift;
 
-	return join(" ", map {$self->{$_} // ""} qw/chr start end ref alt type/);
+	return join(" ", map {$self->{$_} // ""} qw/chr start end ref alt type_effect/);
 }
 
 
