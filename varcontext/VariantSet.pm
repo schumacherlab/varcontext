@@ -175,9 +175,6 @@ sub print_variant_context {
 			#this translates to aa residue nr
 			my $refpepstart = int($refcodonstart/ 3);
 			my $tumorpepstart = int($tumorcodonstart/ 3);
-			
-			print $refcodonstart;
-			print $tumorcodonstart;
 
 			if( $v->{type} eq "substitution") {
 				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna, $refcodonstart - 1, 3) : "";
