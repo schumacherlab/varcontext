@@ -130,7 +130,7 @@ sub print_variant_context {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
 			my $refcdna = $es->{seq};
-			my $tumorcdna = $es->edited_seq(v$->{id});
+			my $tumorcdna = $es->edited_seq($v->{id});
 
 			#create peptides
 			my $refcdnabioseq = Bio::Seq->new(-seq=>$refcdna, -id=>"${tid}_ref");
