@@ -182,6 +182,10 @@ sub print_variant_context {
 				$result{aa_ref} = $codontable->translate($result{codon_ref});
 				$result{aa_alt} = $codontable->translate($result{codon_alt});
 				$v->{type_effect} = $result{aa_ref} eq $result{aa_alt} ? "silent_mutation" : "missense_mutation";
+				
+				if (($result{aa_ref} == "*" && result{aa_alt} != "*") || ($result{aa_ref} != "*" && $result{aa_alt} == "*")) {
+					$v->{type_effect} = ($result{aa_ref} == "*" && result{aa_alt} != "*") == 1 ? "stop_lost" : "stop_gained";
+				}
 				#check translated codon to substr in pepseq
 				if ($result{aa_ref} ne substr($refpepseq, $refpepstart,1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart,1) ) {
 					my $tr = substr($refpepseq, $refpepstart,1);
