@@ -255,7 +255,9 @@ sub convert_position_to_edit {
 
 sub edited_seq {
 	my $self = shift;
-	croak "Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
+	my $v_id = shift;
+
+	croak $v_id . "# Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	return $self->{editedseq};
 }
