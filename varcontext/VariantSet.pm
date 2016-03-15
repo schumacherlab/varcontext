@@ -2,6 +2,7 @@ package VariantSet;
 
 use strict;
 use warnings;
+use POSIX;
 
 use Carp;
 
@@ -173,8 +174,8 @@ sub print_variant_context {
 			my $tumorcodonstart = int($tumorcdnastart - (($tumorcdnastart - 1) %3));
 
 			#this translates to aa residue nr
-			my $refpepstart = int($refcodonstart/ 3);
-			my $tumorpepstart = int($tumorcodonstart/ 3);
+			my $refpepstart = ceil($refcodonstart/ 3);
+			my $tumorpepstart = ceil($tumorcodonstart/ 3);
 
 			if( $v->{type} eq "substitution") {
 				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna, $refcodonstart - 1, 3) : "";
@@ -187,9 +188,9 @@ sub print_variant_context {
 					$v->{type_effect} = ($result{aa_ref} eq "*" && $result{aa_alt} ne "*") == 1 ? "stop_lost" : "stop_gained";
 				}
 				#check translated codon to substr in pepseq
-				if ($result{aa_ref} ne substr($refpepseq, $refpepstart,1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart,1) ) {
-					my $tr = substr($refpepseq, $refpepstart,1);
-					my $ta = substr($tumorpepseq, $tumorpepstart,1);
+				if ($result{aa_ref} ne substr($refpepseq, $refpepstart - 1, 1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart - 1, 1) ) {
+					my $tr = substr($refpepseq, $refpepstart - 1, 1);
+					my $ta = substr($tumorpepseq, $tumorpepstart - 1, 1);
 					croak "Codon mismatch ( $result{aa_ref} / $result{aa_alt} ) vs. ( $tr / $ta ) for " . $v->to_string();
 				}
 			} else {
