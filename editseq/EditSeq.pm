@@ -173,7 +173,7 @@ sub apply_edits {
 				#substitute using the original coordinates in the original string map doesn't change
 				my $replaced = substr $oriseq, $edit->{coord}-1, $edit->{len}, $edit->{seq};
 				if (exists $edit->{original} && $replaced ne $edit->{original}) {
-					carp "Replaced seq ($replaced) doesn't match supplied original ($edit->{original})\n";
+					carp "Replaced seq ($replaced) doesn't match supplied original ($edit->{original})";
 				}
 			}
 		}

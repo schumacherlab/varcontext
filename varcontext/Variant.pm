@@ -95,7 +95,7 @@ sub map_to_Transcript {
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{id} . " # More than 1 coordinate returned for '" . $self->to_string . "'";
+		carp $self->{id} . " # Error during genomic2cds conversion, start & end map on different features '" . $self->to_string . "'";
 		return;
 	}
 
