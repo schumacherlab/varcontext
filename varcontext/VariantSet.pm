@@ -203,9 +203,39 @@ sub print_variant_context {
 				$result{$_} = "" for qw/codon_ref codon_alt aa_ref aa_alt/;
 			}
 
-			#make the context coords
-			#prepare the string coordinates to clip from (substring is zero based)
-			
+			#also determine nmd_status
+			if( $stopindex < $stopindex_ref ) {
+				#find genomic coordinates of new stop
+				my $stopcoord = $stopindex * 3;
+				my ($stop_start, $stop_end) = $v->map_to_Genome($self->{transcripts}->{$tid}, $stopcoord - 2, $stopcoord);
+				#get out genomic coordinates of exons
+				my @transcriptexons = $self->{ens}->exon_info($tid);
+
+				#find out if new stop coordinates are < exon[n-1] - 50 nt
+				my $counter = 0;
+				my $flag = 0;
+				my $exoncount = @transcriptexons;
+
+				# print "New stop @ " . $stop_start . "-" . $stop_end . "\n";
+
+				while($counter <= $#transcriptexons && $flag eq 0) {
+					my $currentexon = $counter + 1;
+					# print "Exon " . $currentexon . " | " . $transcriptexons[$counter]->{start} . "-" . $transcriptexons[$counter]->{end} . "\n";
+
+					if( $stop_start >= $transcriptexons[$counter]->{start} && $stop_end <= $transcriptexons[$counter]->{end} ) {
+						# print "Variant falls in exon: " . $currentexon . " of " . $exoncount . "\n";
+						# print "Distance from exon end: " . ($transcriptexons[$counter]->{end} - $stop_end) . "\n";
+
+						$result{nmd_status} = (($transcriptexons[$counter]->{end} - $stop_end) > 55 && $currentexon != $exoncount) ? "TRUE" : "FALSE";
+						
+						$flag = 1;
+					}
+					$counter++;
+				}
+			} else {
+				$result{nmd_status} = "FALSE";
+			}
+
 			#reference cdna
 			my $stringrefstart = $refcdnastart - $CDNACONTEXTSIZE - 1;
 			$stringrefstart = 0 if $stringrefstart < 0;
