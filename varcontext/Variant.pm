@@ -119,6 +119,35 @@ sub map_to_Transcript {
 	return ($coords[0]->{start},  $coords[0]->{end});
 }
 
+sub map_to_Genome {
+	my $self = shift;
+	my $tr = shift;
+	my $cdsstart = shift;
+	my $cdsend = shift;
+
+	my $trmapper = $tr->get_TranscriptMapper;
+	my @coords = $trmapper->cds2genomic( $cdsstart, $cdsend );
+
+	if(scalar @coords != 1) {
+		# print STDERR Dumper(\@coords);
+		#this is not fatal, but it means that start and end map on different features (gap+coding);
+		carp $self->{id} . " # Error during cds2genomic conversion, start & end map on different features '" . $self->to_string . "'";
+		return;
+	}
+
+	#if it's a gap, we're in an intron, return undef
+	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
+
+	if(not defined $coords[0]->{start}) {
+		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
+	}
+
+	if(not defined $coords[0]->{end}) {
+		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
+	}
+	return ($coords[0]->{start},  $coords[0]->{end});
+}
+
 sub map_to_transcriptid {
 	my $self = shift;
 	my $tid = shift;
