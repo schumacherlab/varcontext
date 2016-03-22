@@ -165,8 +165,9 @@ sub print_variant_context {
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
 				$stopindex = index $tumorpepseq, "*";
-				croak $v->{id} . " # too little bases added, fix code" if $stopindex == -1;
+				croak $v->{id} . " # too little bases added, fix code" if $stopindex == -1;				
 			}
+
 			my %result;
 			$result{peptide_seq_ref} = $refpepseq;
 			$result{peptide_seq_alt} = $tumorpepseq;
