@@ -208,7 +208,7 @@ sub print_variant_context {
 			if( $stopindex < $stopindex_ref ) {
 				#find genomic coordinates of new stop
 				my $stopcoord = $stopindex * 3;
-				my ($stop_start, $stop_end) = $v->map_to_Genome($self->{transcripts}->{$tid}, $stopcoord - 2, $stopcoord);
+				my ($stop_start, $stop_end) = $v->map_to_Genome($self->{transcripts}->{$tid}, $stopcoord, $stopcoord);
 				#get out genomic coordinates of exons
 				my @transcriptexons = $self->{ens}->exon_info($tid);
 
