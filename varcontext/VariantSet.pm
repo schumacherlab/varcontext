@@ -145,15 +145,20 @@ sub print_variant_context {
 			my $stopindex_ref = index $refpepseq, "*";
 			my $stopindex = index $tumorpepseq, "*";
 			my $stoplost = 0;
+			my $extension = 0;
+
 			if($stopindex == -1 && $stopindex_ref != -1) {
 				$stoplost = 1;
 				#stop is lost, append genomic data
-				$tumorcdna = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, $tumorcdna);
+				($tumorcdna, $extension) = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, $tumorcdna);
 				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
 				$tumorpepseq = $tumorcdnabioseq->translate->seq;
 				$stopindex = index $tumorpepseq, "*";
 				croak $v->{id} . " # too little bases added, fix code" if $stopindex == -1;
+			} else {
+				$extension = 0;
 			}
+			
 			#if we moved the stop site we need to redo the peptide generation
 			if( $stoplost && $stopindex != length($tumorpepseq) -1) {
 				$tumorcdna = substr $tumorcdna,0, (($stopindex+1)*3);
@@ -165,6 +170,7 @@ sub print_variant_context {
 			my %result;
 			$result{peptide_seq_ref} = $refpepseq;
 			$result{peptide_seq_alt} = $tumorpepseq;
+			$result{transcript_extension} = $extension;
 
 			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
 			my $tumorcdnastart = $es->convert_position_to_edit($refcdnastart);

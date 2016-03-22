@@ -80,7 +80,7 @@ sub get_genomic_elongation_for_Transcript {
 
 		#find a stop in this seq:
 		while($seq =~ /$stop/g) {
-			return $seq if $-[0] % 3 == 0;
+			return ($seq, $extended) if $-[0] % 3 == 0;
 		}
 		$extended += 100;
 	}
