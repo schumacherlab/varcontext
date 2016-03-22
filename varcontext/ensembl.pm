@@ -100,6 +100,19 @@ sub transcript_info {
 
 }
 
+sub exon_info {
+	my $self = shift;
+	my $tid = shift;
+
+	my $t = $self->{ta}->fetch_by_stable_id($tid);
+
+	return undef unless defined $t;
+
+	my @exons = @{ $t->get_all_Exons() };
+
+	return (@exons);
+
+}
 
 1;
 
