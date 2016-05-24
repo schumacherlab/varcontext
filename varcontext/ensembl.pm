@@ -5,7 +5,7 @@ use warnings;
 use Carp;
  
 use FindBin;
-use lib ("$FindBin::Bin", map {"/home/NFS/users/l.fanchi/libs/ensembl_75/". $_} qw(ensembl/modules
+use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_81/". $_} qw(ensembl/modules
 	ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
