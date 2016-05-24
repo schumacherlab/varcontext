@@ -12,7 +12,7 @@ use Variant;
 use VariantSet;
 use ensembl;
 
-my $vs = VariantSet->new(canonical=>1, fullpeptide=>1);
+my $vs = VariantSet->new(canonical=>0, fullpeptide=>1);
 
 my $csv = Text::CSV->new ( { 'binary' => 1, 'sep_char' => "\t" } )  # should set binary attribute.
 	or die "Cannot use CSV: ".Text::CSV->error_diag ();
