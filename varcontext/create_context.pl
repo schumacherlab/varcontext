@@ -30,10 +30,10 @@ while ( my $row = $csv->getline( $fh ) ) {
 	my $id = $row->[2];
 	(my $ref = $row->[3]) =~ s/-//g;
 	(my $alt = $row->[4]) =~ s/-//g;
-	if($alt =~ m/,/) {
+	if ($alt =~ m/,/) {
 		warn "Discarding alt for:" . join(",", @$row) . "\n";
 		$alt =~ s/,.*//;
-	} else if ($id =~ m/gs/) {
+	} elseif ($id =~ m/gs/) {
 		warn "Discarding genomic SNP from context generation";
 		next;
 	}
