@@ -17,12 +17,8 @@ my $fullpeptide = 1;
 
 GetOptions ("canonical" => \$canonical, "fullpeptide" => \$fullpeptide );
 
-if ($canonical) {
-	say $canonical;
-}
-if ($fullpeptide) {
-	say $fullpeptide;
-}
+print $canonical . "\n";
+print $fullpeptide . "\n";
 
 my $vs = VariantSet->new( canonical => $canonical ? 1 : 0, fullpeptide => $fullpeptide ? 1 : 0 );
 
