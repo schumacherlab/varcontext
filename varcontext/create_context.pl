@@ -15,12 +15,12 @@ use ensembl;
 my $canonical;
 my $fullpeptide;
 
-GetOptions("canonical"=>\$canonical, "fullpeptide"=>\$fullpeptide);
+GetOptions ("canonical" => \$canonical, "fullpeptide" => \$fullpeptide );
 
 
-my $vs = VariantSet->new(canonical=> $canonical ? 1 : 0, fullpeptide=>$fullpeptide ? 1 : 0);
+my $vs = VariantSet->new( canonical => $canonical ? 1 : 0, fullpeptide => $fullpeptide ? 1 : 0 );
 
-my $csv = Text::CSV->new ( { binary => 1, sep_char=>"\t" } )  # should set binary attribute.
+my $csv = Text::CSV->new ( { binary => 1, sep_char => "\t" } )  # should set binary attribute.
 	or die "Cannot use CSV: ".Text::CSV->error_diag ();
 my $file = shift;
 
