@@ -17,9 +17,6 @@ my $fullpeptide = 1;
 
 GetOptions ("canonical" => \$canonical, "fullpeptide" => \$fullpeptide );
 
-print $canonical . "\n";
-print $fullpeptide . "\n";
-
 my $vs = VariantSet->new( canonical => $canonical ? 1 : 0, fullpeptide => $fullpeptide ? 1 : 0 );
 
 my $csv = Text::CSV->new ( { binary => 1, sep_char => "\t" } )  # should set binary attribute.
@@ -36,7 +33,7 @@ while ( my $row = $csv->getline( $fh ) ) {
 		warn "Discarding alt for:" . join(",", @$row) . "\n";
 		$alt =~ s/,.*//;
 	} elsif ($id =~ m/gs.*/) {
-		warn "Discarding genomic SNP from context generation";
+		# warn "Discarding genomic SNP from context generation";
 		next;
 	}
 	my $v = Variant->new(id=>$id, chr=>$row->[0], start=>$row->[1], ref=>$ref, alt=>$alt);
