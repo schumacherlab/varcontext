@@ -12,11 +12,17 @@ use Variant;
 use VariantSet;
 use ensembl;
 
-my $canonical;
-my $fullpeptide;
+my $canonical = 1;
+my $fullpeptide = 1;
 
 GetOptions ("canonical" => \$canonical, "fullpeptide" => \$fullpeptide );
 
+if ($canonical) {
+	say $canonical;
+}
+if ($fullpeptide) {
+	say $fullpeptide;
+}
 
 my $vs = VariantSet->new( canonical => $canonical ? 1 : 0, fullpeptide => $fullpeptide ? 1 : 0 );
 
