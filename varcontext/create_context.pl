@@ -1,6 +1,9 @@
 use strict;
 use warnings;
 
+use constant false => 0;
+use constant true  => 1;
+
 use Data::Dumper;
 use Text::CSV;
 use Getopt::Long;
