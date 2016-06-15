@@ -123,10 +123,10 @@ sub apply_variants {
 sub print_variant_context {
 	my $self = shift;
 
-	# print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	# print header
+	# print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullprotein} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 
-	print join("\t", qw/mut_id chromosome start_position end_position ref_allele alt_allele gene_id transcript_id gene_symbol variant_classification transcript_remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullpeptide} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
+	print join("\t", qw/mut_id chromosome start_position end_position ref_allele alt_allele gene_id transcript_id gene_symbol variant_classification transcript_remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullprotein} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
@@ -289,7 +289,7 @@ sub print_variant_context {
 			# my @printcolumns = qw/id chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
 
 			my @printcolumns = qw/id chr start end ref alt geneid tid externalname type_effect remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/;
-			push @printcolumns, ("peptide_seq_ref", "peptide_seq_alt") if $self->{options}->{fullpeptide};
+			push @printcolumns, ("protein_seq_ref", "protein_seq_alt") if $self->{options}->{fullprotein};
 
 			# get the context
 			print join("\t", map {$result{$_} // ""} @printcolumns ), "\n";
