@@ -16,11 +16,11 @@ use VariantSet;
 use ensembl;
 
 my $canonical = false;
-my $fullpeptide = true;
+my $fullprotein = true;
 
-GetOptions ("canonical" => \$canonical, "fullpeptide" => \$fullpeptide );
+GetOptions ("canonical" => \$canonical, "fullprotein" => \$fullprotein );
 
-my $vs = VariantSet->new( canonical => $canonical, fullpeptide => $fullpeptide);
+my $vs = VariantSet->new( canonical => $canonical, fullprotein => $fullprotein);
 
 my $csv = Text::CSV->new ( { binary => 1, sep_char => "\t" } )  # should set binary attribute.
 	or die "Cannot use CSV: ".Text::CSV->error_diag ();
