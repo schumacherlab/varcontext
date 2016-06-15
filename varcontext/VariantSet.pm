@@ -128,6 +128,11 @@ sub print_variant_context {
 
 	print join("\t", qw/mut_id chromosome start_position end_position ref_allele alt_allele gene_id transcript_id gene_symbol variant_classification transcript_remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullprotein} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
+		# check if variant is SNP, if so, don't print a context
+		if ($v->$id =~ m/gs.*/) {
+			# warn "Discarding genomic SNP";
+			next;
+		}
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			my $es = $self->{editedtranscripts}->{$tid};
 			my $refcdna = $es->{seq};
