@@ -33,12 +33,6 @@ while ( my $row = $csv->getline( $fh ) ) {
 	(my $ref = $row->[3]) =~ s/-//g;
 	(my $alt = $row->[4]) =~ s/-//g;
 	
-	# check if variant is SNP
-	if ($id =~ m/gs.*/) {
-		# warn "Discarding genomic SNP from context generation";
-		next;
-	}
-
 	# check if multiple alt's present
 	if ($alt =~ m/,/) {
 		warn "Pruning alt seqs to first listed alt:" . join(",", @$row) . "\n";
