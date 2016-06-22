@@ -100,7 +100,7 @@ sub insdel_overlap {
 	my $new = shift;
 
 	#no history is fine
-	return 0 unless exists $self->{_edit_history};
+	return 0 if scalar(@{$self->{_edit_history}}) == 0;
 
 	#if the edit's an substitition it's ok.
 	return 0 if $new->{type} eq "substitution";
@@ -140,7 +140,7 @@ sub apply_edits {
 	my $self = shift;
 	croak "Sequence has edits already applied." if exists $self->{editedseq};
 
-	return ($self->{seq}, undef) unless $self->hasedits;
+	#return ($self->{seq}, undef) unless $self->hasedits;
 
 	#apply edits
 	my $oriseq = $self->{seq};
@@ -255,9 +255,8 @@ sub convert_position_to_edit {
 
 sub edited_seq {
 	my $self = shift;
-	my $v_id = shift;
 
-	croak $v_id . "# Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
+	croak "# Sequence edits not yet applied, call editseq->apply_edits first" unless exists $self->{editedseq};
 
 	return $self->{editedseq};
 }
@@ -286,7 +285,7 @@ sub substring_edited {
 
 sub hasedits {
 	my $self = shift;
-	return 1 if exists $self->{_edit_history};
+	return 1 if scalar(@{$self->{_edit_history}}) > 0;
 	return 0;
 }
 
@@ -298,6 +297,7 @@ sub new {
 	bless $self, $class;
 
 	$self->{seq} = $seq;
+	$self->{_edit_history} = [];
 	return $self;
 }
 
