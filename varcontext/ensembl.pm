@@ -54,7 +54,8 @@ sub get_Transcripts_for_Variant {
 sub get_genomic_elongation_for_Transcript {
 	my $self = shift;
 	my $t = shift;
-	my $seq = shift; #the current cDNA sequence that we are going to elongate
+	my $seq = shift; #the current RNA sequence that we are going to elongate
+	my $seq_len = length $seq;
 
 	croak "Transcript must be type Bio::EnsEMBL::Transcript" unless ref $t eq "Bio::EnsEMBL::Transcript";
 
@@ -80,7 +81,7 @@ sub get_genomic_elongation_for_Transcript {
 
 		#find a stop in this seq:
 		while($seq =~ /$stop/g) {
-			return ($seq, $extended) if $-[0] % 3 == 0;
+			return substr($seq, 0, $-[0]) if ($-[0] % 3 == 0);
 		}
 		$extended += 100;
 	}

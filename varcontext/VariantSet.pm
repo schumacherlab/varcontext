@@ -7,7 +7,7 @@ use POSIX;
 use Carp;
 
 use ensembl;
-use EditSeq;
+use EditTranscript;
 use Bio::Seq;
 use Bio::Tools::CodonTable;
 
@@ -90,24 +90,28 @@ sub apply_variants {
 		# the ensembl object
 		my $et = $self->{transcripts}->{$tid};
 
-		my $pepseq = $et->translate->seq;
-		my $cdna = $et->translateable_seq;
-		# the cDNA sequence from the transcript that we are going to edit
-		my $tumorcdna = EditSeq->new($cdna);
-		
+		#create an editable transcript
+		my $germline_transcript = EditTranscript->new($et);
+		my $tumor_transcript = EditTranscript->new($et);
+
 		# loop over all variant on this transcript
 		my $nedits = 0;
 		foreach my $v (@{$self->{transcripts_to_variants}->{$tid}}) {
 			# apply variant as edit
-			my $haseffect = $v->apply_to_Transcript($et, $tumorcdna);
+			my $haseffect = $tumor_transcript->apply_variant($v);
 			if($haseffect == 0) {
 				$v->remove_affected_transcriptid($tid);
+				next;
 			}
+			#apply SNP's only  to germline edit
+			$germline_transcript->apply_variant($v) if exists $v->{id} && $v->{id} =~ m/^[gr]s\d+$/;
 			$nedits += $haseffect;
 		}
 		if ($nedits > 0) {
-			$tumorcdna->apply_edits;
-			$self->{editedtranscripts}->{$tid} = $tumorcdna;
+			$germline_transcript->apply_edits;
+			$tumor_transcript->apply_edits;
+			$self->{edit_transcripts}->{tumor}->{$tid} = $tumor_transcript;
+			$self->{edit_transcripts}->{germline}->{$tid} = $germline_transcript;
 		} else {
 			# this $tid is not affected by any variant, remove it from the lists
 			delete $self->{transcripts}->{$tid};
@@ -116,188 +120,129 @@ sub apply_variants {
 	}
 }
 
-# I have some issues with this sub.
-# I think it should be split in a per transcript cdna->peptide part
-# followed by the subsetting
-# This would also avoid double work when multiple variants affect the same transcript.
 sub print_variant_context {
 	my $self = shift;
 
 	# print header
-	# print join("\t", qw/id chr start end ref alt transcriptid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/, $self->{options}->{fullprotein} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
+	my @columns = qw/
+		id
+		chr
+		start
+		end
+		ref
+		alt
+		geneid
+		tid
+		externalname
+		type_effect
+		remark
+		transcript_extension
+		nmd_status
+		codon_ref
+		codon_germline
+		codon_tumor
+		aa_ref
+		aa_germline
+		aa_tumor
+		peptide_context_ref
+		peptide_context_germline
+		peptide_context_tumor/;
+	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{fullprotein};
+	print join("\t", @columns), "\n";
 
-	print join("\t", qw/mut_id chromosome start_position end_position ref_allele alt_allele gene_id transcript_id gene_symbol variant_classification transcript_remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/, $self->{options}->{fullprotein} ? "peptide_seq_ref\tpeptide_seq_alt" : ""),  "\n";
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
-		if ($v->$id =~ m/gs.*/) {
-			# warn "Discarding genomic SNP";
-			next;
-		}
+		next if exists $v->{id} && $v->{id} =~ m/^[gr]s\d+$/;
+
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
-			my $es = $self->{editedtranscripts}->{$tid};
-			my $refcdna = $es->{seq};
-			my $tumorcdna = $es->edited_seq($v->{id});
-
-			# create peptides
-			my $refcdnabioseq = Bio::Seq->new(-seq=>$refcdna, -id=>"${tid}_ref");
-			my $refpepseq = $refcdnabioseq->translate->seq;
-			my $tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
-			my $tumorpepseq = $tumorcdnabioseq->translate->seq;
 			
-			# find the location of the (first) stop codon
-			# sometimes the reference sequence also lacks a stopcodon. If this is the case do not extend the
-			# tumor peptide sequence
-			my $stopindex_ref = index $refpepseq, "*";
-			my $stopindex = index $tumorpepseq, "*";
-			my $stoplost = 0;
-			my $extension = 0;
-
-			if($stopindex == -1 && $stopindex_ref != -1) {
-				$stoplost = 1;
-				# stop is lost, append genomic data
-				($tumorcdna, $extension) = $self->{ens}->get_genomic_elongation_for_Transcript($self->{transcripts}->{$tid}, $tumorcdna);
-				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
-				$tumorpepseq = $tumorcdnabioseq->translate->seq;
-				$stopindex = index $tumorpepseq, "*";
-				croak $v->{id} . " # too little bases added, fix code" if $stopindex == -1;
-			} else {
-				$extension = 0;
-			}
-			
-			# if we moved the stop site we need to redo the peptide generation
-			if( $stoplost && $stopindex != length($tumorpepseq) -1) {
-				$tumorcdna = substr $tumorcdna,0, (($stopindex+1)*3);
-				$tumorcdnabioseq = Bio::Seq->new(-seq=>$tumorcdna, -id=>"${tid}_tumor");
-				$tumorpepseq = $tumorcdnabioseq->translate->seq;
-				$stopindex = index $tumorpepseq, "*";
-				croak $v->{id} . " # too little bases added, fix code" if $stopindex == -1;				
-			}
+			my $es_germline = $self->{edit_transcripts}->{germline}->{$tid};
+			my $es_tumor = $self->{edit_transcripts}->{tumor}->{$tid};
 
 			my %result;
-			$result{peptide_seq_ref} = $refpepseq;
-			$result{peptide_seq_alt} = $tumorpepseq;
-			$result{transcript_extension} = $extension;
+			$result{protein_seq_ref} = $es_tumor->{ref_protein};
+			$result{protein_seq_germline} = $es_germline->{edited_protein};
+			$result{protein_seq_tumor} = $es_tumor->{edited_protein};
+			$result{transcript_extension} = $es_tumor->{transcript_extension} || 0;
 
-			my ($refcdnastart, $refcdnaend) = $v->map_to_transcriptid($tid);
-			my $tumorcdnastart = $es->convert_position_to_edit($refcdnastart);
+			#ref rna start and end are 1-based
+			my ($ref_rna_start, $ref_rna_end) = $v->map_to_transcriptid($tid);
+			my $germline_rna_start = $es_germline->convert_position_to_edit($ref_rna_start);
+			my $tumor_rna_start = $es_tumor->convert_position_to_edit($ref_rna_start);
 
-			# cut the codons for the results table
-			my $refcodonstart = int($refcdnastart - (($refcdnastart - 1) %3));
-			my $tumorcodonstart = int($tumorcdnastart - (($tumorcdnastart - 1) %3));
-
-			# this translates to aa residue nr
-			my $refpepstart = ceil($refcodonstart/ 3);
-			my $tumorpepstart = ceil($tumorcodonstart/ 3);
+			# this translates to aa residue nr (1-based coordinates)
+			my $ref_pep_start = ceil($ref_rna_start / 3);
+			my $germline_pep_start = ceil($germline_rna_start/ 3);
+			my $tumor_pep_start = ceil($tumor_rna_start / 3);
 
 			if( $v->{type} eq "substitution") {
-				$result{codon_ref} = $v->{type} eq "substitution" ? substr($refcdna, $refcodonstart - 1, 3) : "";
-				$result{codon_alt} = $v->{type} eq "substitution" ? substr($tumorcdna, $tumorcodonstart - 1, 3) : "";
+				$result{codon_ref} = $es_germline->get_codon_ref($ref_rna_start);
+				$result{codon_germline} = $es_germline->get_codon_edit($germline_rna_start);
+				$result{codon_tumor} = $es_tumor->get_codon_edit($tumor_rna_start);
+
 				$result{aa_ref} = $codontable->translate($result{codon_ref});
-				$result{aa_alt} = $codontable->translate($result{codon_alt});
-				$v->{type_effect} = $result{aa_ref} eq $result{aa_alt} ? "silent_mutation" : "missense_mutation";
+				$result{aa_germline} = $codontable->translate($result{codon_germline});
+				$result{aa_tumor} = $codontable->translate($result{codon_tumor});
+
+				$v->{type_effect} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
 				
-				if (($result{aa_ref} eq "*" && $result{aa_alt} ne "*") || ($result{aa_ref} ne "*" && $result{aa_alt} eq "*")) {
-					$v->{type_effect} = ($result{aa_ref} eq "*" && $result{aa_alt} ne "*") == 1 ? "stop_lost" : "stop_gained";
+				if ($result{aa_germline} eq "*" && $result{aa_tumor} ne "*") {
+					$v->{type_effect} = "stop_lost";
+				} elsif ($result{aa_germline} ne "*" && $result{aa_tumor} eq "*") {
+					$v->{type_effect} = "stop_gained";
 				}
+
 				# check translated codon to substr in pepseq
-				if ($result{aa_ref} ne substr($refpepseq, $refpepstart - 1, 1) || $result{aa_alt} ne substr($tumorpepseq, $tumorpepstart - 1, 1) ) {
-					my $tr = substr($refpepseq, $refpepstart - 1, 1);
-					my $ta = substr($tumorpepseq, $tumorpepstart - 1, 1);
-					croak "Codon mismatch ( $result{aa_ref} / $result{aa_alt} ) vs. ( $tr / $ta ) for " . $v->to_string();
+				my $tr = substr($result{protein_seq_ref}, $ref_pep_start - 1, 1);
+				my $ta = substr($result{protein_seq_tumor}, $tumor_pep_start - 1, 1);
+				if ( $result{aa_ref} ne $tr || $result{aa_tumor} ne $ta) {
+					croak "Codon mismatch ( $result{aa_ref} / $result{aa_tumor} ) vs. ( $tr / $ta ) for " . $v->to_string();
 				}
 			} else {
-				$result{$_} = "" for qw/codon_ref codon_alt aa_ref aa_alt/;
+				$result{$_} = "" for qw/codon_ref codon_germline codon_tumor aa_ref aa_germline aa_tumor/;
 			}
 
-			# also determine nmd_status
-			if( $stopindex < $stopindex_ref ) {
-				# find genomic coordinates of new stop
-				my $stopcoord = $stopindex * 3;
-				my ($stop_start, $stop_end) = $v->map_to_Genome($self->{transcripts}->{$tid}, $stopcoord, $stopcoord);
-				# get out genomic coordinates of exons
-				my @transcriptexons = $self->{ens}->exon_info($tid);
+			my $stopindex_ref = index $result{protein_seq_ref}, "*";
+			my $stopindex_germline = index $result{protein_seq_germline}, "*";
+			my $stopindex_tumor = index $result{protein_seq_tumor}, "*";
 
-				# find out if new stop coordinates are < exon[n-1] - 50 nt
-				my $counter = 0;
-				my $flag = 0;
-				my $exoncount = @transcriptexons;
+			# context sequences rna
+			$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $CDNACONTEXTSIZE);
+			$result{rna_context_germline} = $es_germline->get_rna_context_edit($germline_rna_start, $CDNACONTEXTSIZE);
+			$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $CDNACONTEXTSIZE);
 
-				# print "New stop @ " . $stop_start . "-" . $stop_end . "\n";
+			# context sequences peptide
+			$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $PEPCONTEXTSIZE);
+			$result{peptide_context_germline} = $es_germline->get_protein_context_edit($germline_pep_start, $PEPCONTEXTSIZE);
+			$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $PEPCONTEXTSIZE);
 
-				while($counter <= $#transcriptexons && $flag eq 0) {
-					my $currentexon = $counter + 1;
-					# print "Exon " . $currentexon . " | " . $transcriptexons[$counter]->{start} . "-" . $transcriptexons[$counter]->{end} . "\n";
+			$result{peptide_pos_ref} = $ref_pep_start;
+			$result{peptide_pos_germline} = $germline_pep_start;
+			$result{peptide_pos_tumor} = $tumor_pep_start;
 
-					if( $stop_start >= $transcriptexons[$counter]->{start} && $stop_end <= $transcriptexons[$counter]->{end} ) {
-						# print "Variant falls in exon: " . $currentexon . " of " . $exoncount . "\n";
-						# print "Distance from exon end: " . ($transcriptexons[$counter]->{end} - $stop_end) . "\n";
-
-						$result{nmd_status} = (($transcriptexons[$counter]->{end} - $stop_end) > 55 && $currentexon != $exoncount) ? "TRUE" : "FALSE";
-						
-						$flag = 1;
-					}
-					$counter++;
-				}
-			} else {
-				$result{nmd_status} = "FALSE";
+			# tumor peptides
+			# if this variant induced a frame shift or mutated the stop codon clip until the end
+			if ($v->{type_effect} eq "stop_lost" || $v->{type_effect} eq "stop_gained" || $v->{effect} eq "frame_shift") {
+				my $p = $tumor_pep_start - $PEPCONTEXTSIZE-1;
+				$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
+				$result{peptide_pos_tumor} = length($result{protein_seq_tumor});
 			}
+			$result{remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
-			# reference cdna
-			my $stringrefstart = $refcdnastart - $CDNACONTEXTSIZE - 1;
-			$stringrefstart = 0 if $stringrefstart < 0;
-			$result{cdna_context_ref} = substr($refcdna, $stringrefstart, $CDNACONTEXTSIZE*2);
-
-			# reference peptide
-			my $stringrefpepstart = $refpepstart - $PEPCONTEXTSIZE - 1;
-			$stringrefpepstart = 0 if $stringrefpepstart < 0;
-			$result{peptide_context_ref} = substr($refpepseq, $stringrefpepstart, $PEPCONTEXTSIZE*2);
-			$result{peptide_pos_ref} = $refpepstart;
-
-			# tumor peptide
-			my $stringtumorpepstart = $tumorpepstart - $PEPCONTEXTSIZE - 1;
-			$stringtumorpepstart = 0 if $stringtumorpepstart < 0;
-			if($tumorpepstart <= ($stopindex+ 1)) {
-				# if this variant induced a frame shift or mutated the stop codon clip until stop
-				if(($tumorpepstart == length($refpepseq)) || (exists $v->{effect} && $v->{effect} eq 'frameshift')) {
-					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart);
-					$result{peptide_pos_alt_stop} = length($tumorpepseq);
-				} else {
-					$result{peptide_context_alt} = substr($tumorpepseq, $stringtumorpepstart, $PEPCONTEXTSIZE*2);
-					$result{peptide_pos_alt_stop} = $tumorpepstart;
-				}
-				$result{peptide_pos_alt_start} = $tumorpepstart;
-			} else {
-				$result{peptide_pos_alt_start} = "-";
-				$result{peptide_pos_alt_stop} = "-";
-				$result{peptide_context_alt} = "-";
-				$result{remark} = "variant after gained stop";
-			}
+			#NMD status
+			$result{nmd_status} = $es_tumor->nmd_status;
 			
-			# tumor cdna
-			my $stringtumorstart = $tumorcdnastart-$CDNACONTEXTSIZE -1;
-			$stringtumorstart = 0 if $stringtumorstart < 0;
-			if($tumorpepstart <= ($stopindex +1)) {
-				$result{cdna_context_alt} = substr($tumorcdna, $stringtumorstart, $CDNACONTEXTSIZE*2);
-			} else {
-				$result{cdna_context_alt} = "-";
-			}
-		
 			# add remaining info
 			$result{$_} = $v->{$_} // "" foreach qw/id chr start end ref alt type effect type_effect/;
 			$result{tid} = $tid;
 			($result{geneid}, $result{externalname}) = $self->{ens}->transcript_info($tid);
 
 			if(!exists $result{remark}) {
-				$result{remark} = $result{peptide_context_ref} eq $result{peptide_context_alt} ? "identical" : "codingchanges";
+				$result{remark} = $result{peptide_context_germline} eq $result{peptide_context_tumor} ? "identical" : "somatic_change";
 			}
 
-			# my @printcolumns = qw/id chr start end ref alt tid geneid externalname type cdna_context_ref cdna_context_alt peptide_pos_ref peptide_context_ref peptide_pos_alt peptide_context_alt remark effect/;
-
-			my @printcolumns = qw/id chr start end ref alt geneid tid externalname type_effect remark transcript_extension nmd_status codon_ref codon_alt aa_ref aa_alt peptide_pos_ref peptide_pos_alt_start peptide_pos_alt_stop/;
-			push @printcolumns, ("protein_seq_ref", "protein_seq_alt") if $self->{options}->{fullprotein};
-
-			# get the context
-			print join("\t", map {$result{$_} // ""} @printcolumns ), "\n";
+			#print the results
+			print join("\t", map {$result{$_} // ""} @columns ), "\n";
 		}
 	}
 }

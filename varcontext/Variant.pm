@@ -52,7 +52,7 @@ sub new {
 	}
 
 	#calc end
-	$self->{end} = $self->{start}  + length($setters{ref}) -1 ;
+	$self->{end} = $self->{start}  + length($self->{ref}) -1 ;
 
 	#prepare target maps
 	$self->{affected_transcriptids} = {};
