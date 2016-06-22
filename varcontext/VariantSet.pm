@@ -185,7 +185,8 @@ sub print_variant_context {
 				$result{aa_tumor} = $codontable->translate($result{codon_tumor});
 
 				$v->{type_effect} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
-				
+				$v->{effect} = $v->{type_effect};
+
 				if ($result{aa_germline} eq "*" && $result{aa_tumor} ne "*") {
 					$v->{type_effect} = "stop_lost";
 				} elsif ($result{aa_germline} ne "*" && $result{aa_tumor} eq "*") {
@@ -222,7 +223,7 @@ sub print_variant_context {
 
 			# tumor peptides
 			# if this variant induced a frame shift or mutated the stop codon clip until the end
-			if ($v->{type_effect} eq "stop_lost" || $v->{type_effect} eq "stop_gained" || $v->{effect} eq "frame_shift") {
+			if ($v->{type_effect} eq "stop_lost" || $v->{type_effect} eq "stop_gained" || $v->{effect} eq "frameshift") {
 				my $p = $tumor_pep_start - $PEPCONTEXTSIZE-1;
 				$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
 				$result{peptide_pos_tumor} = length($result{protein_seq_tumor});
