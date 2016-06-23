@@ -5,8 +5,10 @@ use warnings;
 use Carp;
  
 use FindBin;
-use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_81/". $_} qw(ensembl/modules
-	ensembl-variation/modules bioperl-live));
+
+croak 'Please set environment variable ENSEMBLAPI to full Ensembl API path' unless defined $ENV{'ENSEMBLAPI'};
+
+use lib ("$FindBin::Bin", map {$ENV{'ENSEMBLAPI'}. $_} qw(ensembl/modules	ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::PredictionTranscript;
