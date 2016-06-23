@@ -17,12 +17,13 @@ use ensembl;
 
 my $canonical = false;
 my $fullprotein = true;
+my $separator = "\t";
 
-GetOptions ("canonical" => \$canonical, "fullprotein" => \$fullprotein );
+GetOptions ("separator=s" => \$separator, "canonical" => \$canonical, "fullprotein" => \$fullprotein );
 
 my $vs = VariantSet->new( canonical => $canonical, fullprotein => $fullprotein);
 
-my $csv = Text::CSV->new ( { binary => 1, sep_char => "\t" } )  # should set binary attribute.
+my $csv = Text::CSV->new ( { binary => 1, sep_char => $separator } )  # should set binary attribute.
 	or die "Cannot use CSV: ".Text::CSV->error_diag ();
 my $file = shift;
 
