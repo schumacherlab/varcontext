@@ -101,21 +101,21 @@ sub map_to_Transcript {
 	#if it's a gap, we're in an intron, return undef
 	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
-	if($coords[0]->{mut_id} ne "cdna") {
+	if($coords[0]->{id} ne "cdna") {
 		croak("Mapped coord is not cdna for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{start_position}) {
+	if(not defined $coords[0]->{start}) {
 		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{end_position}) {
+	if(not defined $coords[0]->{end}) {
 		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	$self->{transcript_map}->{$tr->stable_id}->{start_position} = $coords[0]->{start_position};
-	$self->{transcript_map}->{$tr->stable_id}->{end_position} = $coords[0]->{end_position};
-	return ($coords[0]->{start_position},  $coords[0]->{end_position});
+	$self->{transcript_map}->{$tr->stable_id}->{start_position} = $coords[0]->{start};
+	$self->{transcript_map}->{$tr->stable_id}->{end_position} = $coords[0]->{end};
+	return ($coords[0]->{start_position},  $coords[0]->{end});
 }
 
 sub map_to_Genome {
@@ -137,14 +137,14 @@ sub map_to_Genome {
 	#if it's a gap, we're in an intron, return undef
 	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
-	if(not defined $coords[0]->{start_position}) {
+	if(not defined $coords[0]->{start}) {
 		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{end_position}) {
+	if(not defined $coords[0]->{end}) {
 		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
-	return ($coords[0]->{start_position},  $coords[0]->{end_position});
+	return ($coords[0]->{start},  $coords[0]->{end});
 }
 
 sub map_to_transcriptid {
