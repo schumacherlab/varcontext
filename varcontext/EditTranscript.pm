@@ -48,8 +48,8 @@ sub apply_variant {
 	my ($start, $end) = $v->map_to_Transcript($self->{transcript});
 	return 0 unless defined $start && defined $end;
 	#if the transcript is on the reverse strand we need to reverse the variant
-	my $alt = $self->{transcript}->strand == 1 ? $v->{alt} : $v->reverse_alt;
-	my $ref = $self->{transcript}->strand == 1 ? $v->{ref} : $v->reverse_ref;
+	my $alt = $self->{transcript}->strand == 1 ? $v->{alt_allele} : $v->reverse_alt;
+	my $ref = $self->{transcript}->strand == 1 ? $v->{ref_allele} : $v->reverse_ref;
 
 	given($v->{type}) {
 		when("substitution") {
@@ -57,18 +57,18 @@ sub apply_variant {
 		}
 		when("insertion") {
 			$self->{rna_editor}->edit_insert($alt, $start);
-			$v->{effect} = (length($v->{alt}) % 3) == 0 ? "inframe" : "frameshift";
-			$v->{type_effect} = (length($v->{alt}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{effect} = (length($v->{alt_allele}) % 3) == 0 ? "inframe" : "frameshift";
+			$v->{variant_classification} = (length($v->{alt_allele}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
 		}
 		when("deletion") {
 			$self->{rna_editor}->edit_delete($ref, $start);
-			$v->{effect} = (length($v->{ref}) % 3) == 0 ? "inframe" : "frameshift";
-			$v->{type_effect} = (length($v->{ref}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{effect} = (length($v->{ref_allele}) % 3) == 0 ? "inframe" : "frameshift";
+			$v->{variant_classification} = (length($v->{ref_allele}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
 		}
 		when("complex") {
 			$self->{rna_editor}->edit_complex($alt, $start, $ref);
-			$v->{effect} = abs(length($v->{ref}) - length($v->{alt})) % 3 != 0 ? "inframe" : "frameshift";
-			$v->{type_effect} = abs(length($v->{ref}) - length($v->{alt})) % 3 != 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{effect} = abs(length($v->{ref_allele}) - length($v->{alt_allele})) % 3 != 0 ? "inframe" : "frameshift";
+			$v->{variant_classification} = abs(length($v->{ref_allele}) - length($v->{alt_allele})) % 3 != 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
 		}
 	}
 
@@ -267,7 +267,7 @@ sub nmd_status {
 		if(scalar @coords != 1) {
 			# print STDERR Dumper(\@coords);
 			#this is not fatal, but it means that start and end map on different features (gap+coding);
-			carp "Early stop to genomic coordinare: Error during cds2genomic conversion, start & end map on different features";
+			carp "Early stop to genomic coordinate: Error during cds2genomic conversion, start & end map on different features (e.g. exon-intron boundary)";
 			return;
 		}
 
