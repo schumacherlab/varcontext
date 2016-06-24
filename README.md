@@ -15,7 +15,7 @@ Input files should adhere to the VCF specification by using the following column
 
 varcontext can be called from a wrapper script or directly from the Terminal by:
 
-`export ENSEMBLAPI=/path/to/ensembl_api/;perl create_context.pl --ARGUMENTS INPUT_FILE 1> OUTPUT_FILE 2> LOG_FILE`
+`export ENSEMBLAPI=/path/to/ensembl_api/;perl /path/to/varcontext/create_context.pl --ARGUMENTS INPUT_FILE 1> OUTPUT_FILE 2> LOG_FILE`
 
 **NOTE: environment variable `ENSEMBLAPI` must be set to full ensembl API path and include trailing slash ('/')**
 
