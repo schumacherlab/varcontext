@@ -115,7 +115,7 @@ sub map_to_Transcript {
 
 	$self->{transcript_map}->{$tr->stable_id}->{start_position} = $coords[0]->{start};
 	$self->{transcript_map}->{$tr->stable_id}->{end_position} = $coords[0]->{end};
-	return ($coords[0]->{start_position},  $coords[0]->{end});
+	return ($coords[0]->{start},  $coords[0]->{end});
 }
 
 sub map_to_Genome {
