@@ -50,7 +50,7 @@ sub get_Transcripts_for_Variant {
 
 	croak "Variant must be type variant" unless ref $variant eq "Variant";
 
-	my $slice = $self->{sa}->fetch_by_region('chromosome', $variant->{chr}, $variant->{start}, $variant->{end});
+	my $slice = $self->{sa}->fetch_by_region('chromosome', $variant->{chromosome}, $variant->{start_position}, $variant->{end_position});
 
 	return [] unless defined $slice;
 	return $slice->get_all_Transcripts;
