@@ -143,7 +143,10 @@ sub print_variant_context {
 		codon_tumor
 		aa_ref
 		aa_germline
-		aa_tumor/;
+		aa_tumor
+		peptide_pos_ref
+		peptide_pos_germline
+		peptide_pos_tumor/;
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ unless $self->{options}->{fullprotein};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{fullprotein};
 	print join("\t", @columns), "\n";
