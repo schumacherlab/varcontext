@@ -16,43 +16,43 @@ sub new {
 
 	my %setters = @_;
 
-	carp "Provide chr start ref alt when constructing variant"
-		unless defined $setters{chr} && defined $setters{start} && defined $setters{ref} && defined $setters{alt};
+	carp "Provide chromosome start_position ref_allele alt_allele when constructing variant"
+		unless defined $setters{chromosome} && defined $setters{start_position} && defined $setters{ref_allele} && defined $setters{alt_allele};
 
-	$self->{$_} = $setters{$_} foreach qw/chr start ref alt/;
+	$self->{$_} = $setters{$_} foreach qw/chromosome start_position ref_allele alt_allele/;
 
-	$self->{id} = $setters{id} if exists $setters{id};
+	$self->{mut_id} = $setters{mut_id} if exists $setters{mut_id};
 	
 	#trim left identical bases for ref alt combo
-	my $minlength  = length($self->{ref}) < length($self->{alt}) ? length($self->{ref}) : length($self->{alt});
+	my $minlength  = length($self->{ref_allele}) < length($self->{alt_allele}) ? length($self->{ref_allele}) : length($self->{alt_allele});
 	my $pos = 0;
 	while($minlength > 0 && $pos < $minlength) {
-		last if substr($self->{ref},$pos,1) ne substr($self->{alt},$pos,1);
+		last if substr($self->{ref_allele}, $pos, 1) ne substr($self->{alt_allele}, $pos, 1);
 		$pos++;
 	}
 	if ($pos > 0) {
-		$self->{ref} = substr $self->{ref}, $pos;
-		$self->{alt} = substr $self->{alt}, $pos;
-		$self->{start} += $pos;
+		$self->{ref_allele} = substr $self->{ref_allele}, $pos;
+		$self->{alt_allele} = substr $self->{alt_allele}, $pos;
+		$self->{start_position} += $pos;
 	}
 
-	if($self->{ref} eq $self->{alt}) {
-		croak $self->{id} . " # Not a variant (ref/alt identical): '" . $self->to_string . "'";
+	if($self->{ref_allele} eq $self->{alt_allele}) {
+		croak $self->{mut_id} . " # Not a variant (ref_allele/alt_allele identical): '" . $self->to_string . "'";
 	}
 
 	#infer type
-	if (length($self->{ref}) == length($self->{alt})) {
+	if (length($self->{ref_allele}) == length($self->{alt_allele})) {
 		$self->{type} = "substitution";
-	} elsif (length($self->{ref}) == 0 && length($self->{alt}) > 0) {
+	} elsif (length($self->{ref_allele}) == 0 && length($self->{alt_allele}) > 0) {
 		$self->{type} = "insertion";
-	} elsif (length($self->{ref}) > 0 && length($self->{alt}) == 0) {
+	} elsif (length($self->{ref_allele}) > 0 && length($self->{alt_allele}) == 0) {
 		$self->{type} = "deletion";
 	} else {
 		$self->{type} = "complex";
 	}
 
 	#calc end
-	$self->{end} = $self->{start}  + length($self->{ref}) -1 ;
+	$self->{end_position} = $self->{start_position} + length($self->{ref_allele}) - 1 ;
 
 	#prepare target maps
 	$self->{affected_transcriptids} = {};
@@ -64,7 +64,7 @@ sub new {
 sub reverse_alt {
 	my $self = shift;
 
-	my $rseq = $self->{alt};
+	my $rseq = $self->{alt_allele};
 	$rseq =~ tr/[CGAT]/[GCTA]/;
 	join("",reverse(split //, $rseq));
 }
@@ -72,7 +72,7 @@ sub reverse_alt {
 sub reverse_ref {
 	my $self = shift;
 
-	my $rseq = $self->{ref};
+	my $rseq = $self->{ref_allele};
 	$rseq =~ tr/[CGAT]/[GCTA]/;
 	join("",reverse(split //, $rseq));
 }
@@ -82,41 +82,40 @@ sub map_to_Transcript {
 	my $tr = shift;
 
 	if(exists $self->{transcript_map}->{$tr->stable_id}  &&
-		exists $self->{transcript_map}->{$tr->stable_id}->{start}) {
-		return ($self->{transcript_map}->{$tr->stable_id}->{start},
-		        $self->{transcript_map}->{$tr->stable_id}->{end});
+		exists $self->{transcript_map}->{$tr->stable_id}->{start_position}) {
+		return ($self->{transcript_map}->{$tr->stable_id}->{start_position},
+		        $self->{transcript_map}->{$tr->stable_id}->{end_position});
 	}
-	
 
 	my $trmapper = $tr->get_TranscriptMapper;
-	my @coords = $trmapper->genomic2cds( $self->{start}, $self->{end}, $tr->strand);
+	my @coords = $trmapper->genomic2cds( $self->{start_position}, $self->{end_position}, $tr->strand);
 	
 	#let do some tests and die on exceptions
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{id} . " # Error during genomic2cds conversion, start & end map on different features '" . $self->to_string . "'";
+		carp $self->{mut_id} . " # Error during genomic2cds conversion, start_position & end_position map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
 		return;
 	}
 
 	#if it's a gap, we're in an intron, return undef
 	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
-	if($coords[0]->{id} ne "cdna") {
+	if($coords[0]->{mut_id} ne "cdna") {
 		croak("Mapped coord is not cdna for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{start}) {
+	if(not defined $coords[0]->{start_position}) {
 		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{end}) {
+	if(not defined $coords[0]->{end_position}) {
 		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	$self->{transcript_map}->{$tr->stable_id}->{start} = $coords[0]->{start};
-	$self->{transcript_map}->{$tr->stable_id}->{end} = $coords[0]->{end};
-	return ($coords[0]->{start},  $coords[0]->{end});
+	$self->{transcript_map}->{$tr->stable_id}->{start_position} = $coords[0]->{start_position};
+	$self->{transcript_map}->{$tr->stable_id}->{end_position} = $coords[0]->{end_position};
+	return ($coords[0]->{start_position},  $coords[0]->{end_position});
 }
 
 sub map_to_Genome {
@@ -131,21 +130,21 @@ sub map_to_Genome {
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{id} . " # Error during cds2genomic conversion, start & end map on different features '" . $self->to_string . "'";
+		carp $self->{mut_id} . " # Error during cds2genomic conversion, start & end map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
 		return;
 	}
 
 	#if it's a gap, we're in an intron, return undef
 	return undef if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
-	if(not defined $coords[0]->{start}) {
+	if(not defined $coords[0]->{start_position}) {
 		croak("Start coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
 
-	if(not defined $coords[0]->{end}) {
+	if(not defined $coords[0]->{end_position}) {
 		croak("End coord not on mapped for '" . $self->to_string . "' on " . $tr->stable_id);
 	}
-	return ($coords[0]->{start},  $coords[0]->{end});
+	return ($coords[0]->{start_position},  $coords[0]->{end_position});
 }
 
 sub map_to_transcriptid {
@@ -153,9 +152,9 @@ sub map_to_transcriptid {
 	my $tid = shift;
 
 	if(exists $self->{transcript_map}->{$tid} && 
-		exists $self->{transcript_map}->{$tid}->{start}) {
-		return ($self->{transcript_map}->{$tid}->{start},
-		        $self->{transcript_map}->{$tid}->{end});
+		exists $self->{transcript_map}->{$tid}->{start_position}) {
+		return ($self->{transcript_map}->{$tid}->{start_position},
+		        $self->{transcript_map}->{$tid}->{end_position});
 	} else {
 		croak "Not yet mapped. Need to call Variant->map_to_Transcript with a Ensembl Transcript object";
 	}
@@ -190,8 +189,8 @@ sub apply_to_Transcript {
 	return 0 unless defined $start && defined $end;
 
 	#if the transcript is on the reverse strand we need to reverse the variant
-	my $alt = $tr->strand == 1 ? $self->{alt} : $self->reverse_alt;
-	my $ref = $tr->strand == 1 ? $self->{ref} : $self->reverse_ref;
+	my $alt = $tr->strand == 1 ? $self->{alt_allele} : $self->reverse_alt;
+	my $ref = $tr->strand == 1 ? $self->{ref_allele} : $self->reverse_ref;
 
 	given($self->{type}) {
 		when("substitution") {
@@ -199,18 +198,18 @@ sub apply_to_Transcript {
 		}
 		when("insertion") {
 			$es->edit_insert($alt, $start);
-			$self->{effect} = (length($self->{alt}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type_effect} = (length($self->{alt}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
+			$self->{effect} = (length($self->{alt_allele}) % 3) == 0 ? "inframe" : "frameshift";
+			$self->{variant_classification} = (length($self->{alt_allele}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 		when("deletion") {
 			$es->edit_delete($ref, $start);
-			$self->{effect} = (length($self->{ref}) % 3) == 0 ? "inframe" : "frameshift";
-			$self->{type_effect} = (length($self->{ref}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
+			$self->{effect} = (length($self->{ref_allele}) % 3) == 0 ? "inframe" : "frameshift";
+			$self->{variant_classification} = (length($self->{ref_allele}) % 3) == 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 		when("complex") {
 			$es->edit_complex($alt, $start, $ref);
-			$self->{effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? "inframe" : "frameshift";
-			$self->{type_effect} = abs(length($self->{ref}) - length($self->{alt})) % 3 != 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
+			$self->{effect} = abs(length($self->{ref_allele}) - length($self->{alt_allele})) % 3 != 0 ? "inframe" : "frameshift";
+			$self->{variant_classification} = abs(length($self->{ref_allele}) - length($self->{alt_allele})) % 3 != 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
 		}
 	}
 
@@ -221,7 +220,7 @@ sub apply_to_Transcript {
 sub to_string {
 	my $self = shift;
 
-	return join(" ", map {$self->{$_} // ""} qw/chr start end ref alt type_effect/);
+	return join(" ", map {$self->{$_} // ""} qw/chromosome start_position end_position ref_allele alt_allele variant_classification/);
 }
 
 

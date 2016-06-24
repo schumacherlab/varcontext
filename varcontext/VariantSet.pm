@@ -104,7 +104,7 @@ sub apply_variants {
 				next;
 			}
 			#apply SNP's only  to germline edit
-			$germline_transcript->apply_variant($v) if exists $v->{id} && $v->{id} =~ m/^[gr]s\d+$/;
+			$germline_transcript->apply_variant($v) if exists $v->{mut_id} && $v->{mut_id} =~ m/^[gr]s\d+$/;
 			$nedits += $haseffect;
 		}
 		if ($nedits > 0) {
@@ -125,17 +125,17 @@ sub print_variant_context {
 
 	# print header
 	my @columns = qw/
-		id
-		chr
-		start
-		end
-		ref
-		alt
-		geneid
-		tid
-		externalname
-		type_effect
-		remark
+		mut_id
+		chromosome
+		start_position
+		end_position
+		ref_allele
+		alt_allele
+		gene_id
+		transcript_id
+		gene_symbol
+		variant_classification
+		transcript_remark
 		transcript_extension
 		nmd_status
 		codon_ref
@@ -143,16 +143,14 @@ sub print_variant_context {
 		codon_tumor
 		aa_ref
 		aa_germline
-		aa_tumor
-		peptide_context_ref
-		peptide_context_germline
-		peptide_context_tumor/;
+		aa_tumor/;
+	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ unless $self->{options}->{fullprotein};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{fullprotein};
 	print join("\t", @columns), "\n";
 
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
-		next if exists $v->{id} && $v->{id} =~ m/^[gr]s\d+$/;
+		next if exists $v->{mut_id} && $v->{mut_id} =~ m/^[gr]s\d+$/;
 
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			
@@ -184,13 +182,13 @@ sub print_variant_context {
 				$result{aa_germline} = $codontable->translate($result{codon_germline});
 				$result{aa_tumor} = $codontable->translate($result{codon_tumor});
 
-				$v->{type_effect} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
-				$v->{effect} = $v->{type_effect};
+				$v->{variant_classification} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
+				$v->{effect} = $v->{variant_classification};
 
 				if ($result{aa_germline} eq "*" && $result{aa_tumor} ne "*") {
-					$v->{type_effect} = "stop_lost";
+					$v->{variant_classification} = "stop_lost";
 				} elsif ($result{aa_germline} ne "*" && $result{aa_tumor} eq "*") {
-					$v->{type_effect} = "stop_gained";
+					$v->{variant_classification} = "stop_gained";
 				}
 
 				# check translated codon to substr in pepseq
@@ -223,23 +221,23 @@ sub print_variant_context {
 
 			# tumor peptides
 			# if this variant induced a frame shift or mutated the stop codon clip until the end
-			if ($v->{type_effect} eq "stop_lost" || $v->{type_effect} eq "stop_gained" || $v->{effect} eq "frameshift") {
-				my $p = $tumor_pep_start - $PEPCONTEXTSIZE-1;
+			if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
+				my $p = $tumor_pep_start - $PEPCONTEXTSIZE - 1;
 				$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
 				$result{peptide_pos_tumor} = length($result{protein_seq_tumor});
 			}
-			$result{remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
+			$result{transcript_remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
 			#NMD status
 			$result{nmd_status} = $es_tumor->nmd_status;
 			
 			# add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/id chr start end ref alt type effect type_effect/;
-			$result{tid} = $tid;
-			($result{geneid}, $result{externalname}) = $self->{ens}->transcript_info($tid);
+			$result{$_} = $v->{$_} // "" foreach qw/mut_id chromosome start_position end_position ref_allele alt_allele type effect variant_classification/;
+			$result{transcript_id} = $tid;
+			($result{gene_id}, $result{gene_symbol}) = $self->{ens}->transcript_info($tid);
 
-			if(!exists $result{remark}) {
-				$result{remark} = $result{peptide_context_germline} eq $result{peptide_context_tumor} ? "identical" : "somatic_change";
+			if(!exists $result{transcript_remark}) {
+				$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 			}
 
 			#print the results
