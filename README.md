@@ -23,7 +23,7 @@ varcontext can be called from a wrapper script or directly from the Terminal by:
 
 - separator - field separator for input file (default = "\t")
 - canonical - only fetch and apply edits to canonical transcript (default: FALSE)
-- fullprotein - report full protein sequence (default: TRUE)
+- peptide - report peptide context only (default: FALSE)
 
 ## packages
 
