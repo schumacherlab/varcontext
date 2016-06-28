@@ -144,9 +144,10 @@ sub print_variant_context {
 		aa_ref
 		aa_germline
 		aa_tumor
-		peptide_pos_ref
-		peptide_pos_germline
-		peptide_pos_tumor/;
+		aa_pos_ref
+		aa_pos_germline
+		aa_pos_tumor_start
+		aa_pos_tumor_stop/;
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ unless $self->{options}->{peptide_context};
 	print join("\t", @columns), "\n";
@@ -218,16 +219,18 @@ sub print_variant_context {
 			$result{peptide_context_germline} = $es_germline->get_protein_context_edit($germline_pep_start, $PEPCONTEXTSIZE);
 			$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $PEPCONTEXTSIZE);
 
-			$result{peptide_pos_ref} = $ref_pep_start;
-			$result{peptide_pos_germline} = $germline_pep_start;
-			$result{peptide_pos_tumor} = $tumor_pep_start;
+			$result{aa_pos_ref} = $ref_pep_start;
+			$result{aa_pos_germline} = $germline_pep_start;
+			$result{aa_pos_tumor_start} = $tumor_pep_start;
+			$result{aa_pos_tumor_stop} = $tumor_pep_start;
 
 			# tumor peptides
 			# if this variant induced a frame shift or mutated the stop codon clip until the end
 			if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
 				my $p = $tumor_pep_start - $PEPCONTEXTSIZE - 1;
 				$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
-				$result{peptide_pos_tumor} = length($result{protein_seq_tumor});
+				$result{aa_pos_tumor_start} = $tumor_pep_start;
+				$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 			}
 			$result{transcript_remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
