@@ -28,8 +28,8 @@ sub new {
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
 
-	$self->{options}->{canonical} = exists $args{canonical} ? $args{canonical} : 0;
-	$self->{options}->{fullprotein} = exists $args{fullprotein} ? $args{fullprotein} : 0;
+	$self->{options}->{canonical_only} = exists $args{canonical_only} ? $args{canonical_only} : 0;
+	$self->{options}->{peptide_context} = exists $args{peptide_context} ? $args{peptide_context} : 0;
 
 	return $self;
 }
@@ -60,7 +60,7 @@ sub group_variants {
 				next if $attrib && $attrib->value;
 
 				# canonical only?
-				next if $self->{options}->{canonical} && !$t->is_canonical;
+				next if $self->{options}->{canonical_only} && !$t->is_canonical;
 
 				# store it
 				# refetch the transcript for correct slice attachment. This can probably also be
@@ -147,8 +147,8 @@ sub print_variant_context {
 		peptide_pos_ref
 		peptide_pos_germline
 		peptide_pos_tumor/;
-	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ unless $self->{options}->{fullprotein};
-	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{fullprotein};
+	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
+	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ unless $self->{options}->{peptide_context};
 	print join("\t", @columns), "\n";
 
 	foreach my $v (@{$self->{variants}}) {

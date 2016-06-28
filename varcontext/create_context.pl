@@ -15,13 +15,13 @@ use Variant;
 use VariantSet;
 use ensembl;
 
-my $canonical = false;
-my $fullprotein = true;
 my $separator = "\t";
+my $canonical_flag = false;
+my $peptide_flag = false;
 
-GetOptions ("separator=s" => \$separator, "canonical" => \$canonical, "fullprotein" => \$fullprotein );
+GetOptions ("separator=s" => \$separator, "canonical" => \$canonical_flag, "peptide" => \$peptide_flag );
 
-my $vs = VariantSet->new( canonical => $canonical, fullprotein => $fullprotein);
+my $vs = VariantSet->new( canonical_only => $canonical_flag, peptide_context => $peptide_flag);
 
 my $csv = Text::CSV->new ( { binary => 1, sep_char => $separator } )  # should set binary attribute.
 	or die "Cannot use CSV: ".Text::CSV->error_diag ();
