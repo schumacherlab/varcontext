@@ -21,7 +21,7 @@ sub new {
 
 	$self->{$_} = $setters{$_} foreach qw/chromosome start_position ref_allele alt_allele/;
 
-	$self->{mut_id} = $setters{mut_id} if exists $setters{mut_id};
+	$self->{variant_id} = $setters{variant_id} if exists $setters{variant_id};
 	
 	#trim left identical bases for ref alt combo
 	my $minlength  = length($self->{ref_allele}) < length($self->{alt_allele}) ? length($self->{ref_allele}) : length($self->{alt_allele});
@@ -37,7 +37,7 @@ sub new {
 	}
 
 	if($self->{ref_allele} eq $self->{alt_allele}) {
-		croak $self->{mut_id} . " # Not a variant (ref_allele/alt_allele identical): '" . $self->to_string . "'";
+		croak $self->{variant_id} . " # Not a variant (ref_allele/alt_allele identical): '" . $self->to_string . "'";
 	}
 
 	#infer type
@@ -94,7 +94,7 @@ sub map_to_Transcript {
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{mut_id} . " # Error during genomic2cds conversion, start_position & end_position map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
+		carp $self->{variant_id} . " # Error during genomic2cds conversion, start_position & end_position map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
 		return;
 	}
 
@@ -130,7 +130,7 @@ sub map_to_Genome {
 	if(scalar @coords != 1) {
 		# print STDERR Dumper(\@coords);
 		#this is not fatal, but it means that start and end map on different features (gap+coding);
-		carp $self->{mut_id} . " # Error during cds2genomic conversion, start & end map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
+		carp $self->{variant_id} . " # Error during cds2genomic conversion, start & end map on different features (e.g. exon-intron boundary) '" . $self->to_string . "'";
 		return;
 	}
 

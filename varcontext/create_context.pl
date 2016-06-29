@@ -41,7 +41,7 @@ while ( my $row = $csv->getline( $fh ) ) {
 	}
 
 	# make new variant and add to variant set
-	my $v = Variant->new(mut_id=>$id, chromosome=>$row->[0], start_position=>$row->[1], ref_allele=>$ref, alt_allele=>$alt);
+	my $v = Variant->new(variant_id=>$id, chromosome=>$row->[0], start_position=>$row->[1], ref_allele=>$ref, alt_allele=>$alt);
 	$vs->add($v);
 }
 

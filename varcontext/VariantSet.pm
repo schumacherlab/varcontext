@@ -104,7 +104,7 @@ sub apply_variants {
 				next;
 			}
 			#apply SNP's only  to germline edit
-			$germline_transcript->apply_variant($v) if exists $v->{mut_id} && $v->{mut_id} =~ m/^[gr]s\d+$/;
+			$germline_transcript->apply_variant($v) if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
 			$nedits += $haseffect;
 		}
 		if ($nedits > 0) {
@@ -125,7 +125,7 @@ sub print_variant_context {
 
 	# print header
 	my @columns = qw/
-		mut_id
+		variant_id
 		chromosome
 		start_position
 		end_position
@@ -154,7 +154,7 @@ sub print_variant_context {
 
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
-		next if exists $v->{mut_id} && $v->{mut_id} =~ m/^[gr]s\d+$/;
+		next if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
 
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			
@@ -238,7 +238,7 @@ sub print_variant_context {
 			$result{nmd_status} = $es_tumor->nmd_status;
 			
 			# add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/mut_id chromosome start_position end_position ref_allele alt_allele type effect variant_classification/;
+			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele type effect variant_classification/;
 			$result{transcript_id} = $tid;
 			($result{gene_id}, $result{gene_symbol}) = $self->{ens}->transcript_info($tid);
 
