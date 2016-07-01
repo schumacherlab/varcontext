@@ -31,8 +31,8 @@ open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
 $csv->column_names ($csv->getline ($fh));
 while ( my $row = $csv->getline( $fh ) ) {
 	my $id = $row->[2];
-	(my $ref = $row->[3]) =~ s/-//g;
-	(my $alt = $row->[4]) =~ s/-//g;
+	(my $ref = $row->[3]) =~ s/-|\.//g;
+	(my $alt = $row->[4]) =~ s/-|\.//g;
 	
 	# check if multiple alt's present
 	if ($alt =~ m/,/) {
