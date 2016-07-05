@@ -3,15 +3,14 @@ use strict;
 use warnings;
 
 use Carp;
- 
+use File::Spec;
 use FindBin;
 
 BEGIN { 
-	local $SIG{__DIE__} = sub {warn @_; exit 1};
-	die "Please set environment variable ENSEMBLAPI to full Ensembl API path\n" unless defined $ENV{'ENSEMBLAPI'};
+	warn "Please set environment variable ENSEMBLAPI to full Ensembl API path\n" && exit 1 unless defined $ENV{'ENSEMBLAPI'};
 }
 
-use lib ("$FindBin::Bin", map {$ENV{'ENSEMBLAPI'} . $_} qw(ensembl/modules ensembl-variation/modules bioperl-live));
+use lib ("$FindBin::Bin", map {File::Spec->catdir($ENV{'ENSEMBLAPI'}, $_)} qw(ensembl/modules ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::PredictionTranscript;
