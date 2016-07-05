@@ -161,7 +161,7 @@ sub print_variant_context {
 			my $es_germline = $self->{edit_transcripts}->{germline}->{$tid};
 			my $es_tumor = $self->{edit_transcripts}->{tumor}->{$tid};
 
-			my %result;
+			my %result = map {$_ => ""} @columns;
 			$result{protein_seq_ref} = $es_tumor->{ref_protein};
 			$result{protein_seq_germline} = $es_germline->{edited_protein};
 			$result{protein_seq_tumor} = $es_tumor->{edited_protein};
@@ -172,67 +172,70 @@ sub print_variant_context {
 			my $germline_rna_start = $es_germline->convert_position_to_edit($ref_rna_start);
 			my $tumor_rna_start = $es_tumor->convert_position_to_edit($ref_rna_start);
 
-			# this translates to aa residue nr (1-based coordinates)
-			my $ref_pep_start = ceil($ref_rna_start / 3);
-			my $germline_pep_start = ceil($germline_rna_start/ 3);
-			my $tumor_pep_start = ceil($tumor_rna_start / 3);
+			if (defined $tumor_rna_start) {
+				#it is still possible $germline_rna_start is undefined
 
-			if( $v->{type} eq "substitution") {
-				$result{codon_ref} = $es_germline->get_codon_ref($ref_rna_start);
-				$result{codon_germline} = $es_germline->get_codon_edit($germline_rna_start);
-				$result{codon_tumor} = $es_tumor->get_codon_edit($tumor_rna_start);
+				# this translates to aa residue nr (1-based coordinates)
+				my $ref_pep_start = ceil($ref_rna_start / 3);
+				my $germline_pep_start = ceil($germline_rna_start/ 3) if defined $germline_rna_start;
+				my $tumor_pep_start = ceil($tumor_rna_start / 3);
 
-				$result{aa_ref} = $codontable->translate($result{codon_ref});
-				$result{aa_germline} = $codontable->translate($result{codon_germline});
-				$result{aa_tumor} = $codontable->translate($result{codon_tumor});
+				if( $v->{type} eq "substitution") {
+					$result{codon_ref} = $es_germline->get_codon_ref($ref_rna_start);
+					$result{codon_germline} = defined $germline_rna_start ? $es_germline->get_codon_edit($germline_rna_start) : "-";
+					$result{codon_tumor} = $es_tumor->get_codon_edit($tumor_rna_start);
 
-				$v->{variant_classification} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
-				$v->{effect} = $v->{variant_classification};
+					$result{aa_ref} = $codontable->translate($result{codon_ref});
+					$result{aa_germline} = defined $germline_rna_start ? $codontable->translate($result{codon_germline}) : "-";
+					$result{aa_tumor} = $codontable->translate($result{codon_tumor});
 
-				if ($result{aa_germline} eq "*" && $result{aa_tumor} ne "*") {
-					$v->{variant_classification} = "stop_lost";
-				} elsif ($result{aa_germline} ne "*" && $result{aa_tumor} eq "*") {
-					$v->{variant_classification} = "stop_gained";
+					$v->{variant_classification} = $result{aa_germline} eq $result{aa_tumor} ? "silent_mutation" : "missense_mutation";
+					$v->{effect} = $v->{variant_classification};
+
+					if ($result{aa_germline} eq "*" && $result{aa_tumor} ne "*") {
+						$v->{variant_classification} = "stop_lost";
+					} elsif ($result{aa_germline} ne "*" && $result{aa_tumor} eq "*") {
+						$v->{variant_classification} = "stop_gained";
+					}
+
+					# check translated codon to substr in pepseq
+					my $tr = substr($result{protein_seq_ref}, $ref_pep_start - 1, 1);
+					my $ta = substr($result{protein_seq_tumor}, $tumor_pep_start - 1, 1);
+					if ( $result{aa_ref} ne $tr || $result{aa_tumor} ne $ta) {
+						croak "Codon mismatch ( $result{aa_ref} / $result{aa_tumor} ) vs. ( $tr / $ta ) for " . $v->to_string();
+					}
 				}
 
-				# check translated codon to substr in pepseq
-				my $tr = substr($result{protein_seq_ref}, $ref_pep_start - 1, 1);
-				my $ta = substr($result{protein_seq_tumor}, $tumor_pep_start - 1, 1);
-				if ( $result{aa_ref} ne $tr || $result{aa_tumor} ne $ta) {
-					croak "Codon mismatch ( $result{aa_ref} / $result{aa_tumor} ) vs. ( $tr / $ta ) for " . $v->to_string();
-				}
-			} else {
-				$result{$_} = "" for qw/codon_ref codon_germline codon_tumor aa_ref aa_germline aa_tumor/;
-			}
+				# context sequences rna
+				$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $CDNACONTEXTSIZE);
+				$result{rna_context_germline} = defined $germline_rna_start ? 
+					$es_germline->get_rna_context_edit($germline_rna_start, $CDNACONTEXTSIZE) : "-";
+				$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $CDNACONTEXTSIZE);
 
-			my $stopindex_ref = index $result{protein_seq_ref}, "*";
-			my $stopindex_germline = index $result{protein_seq_germline}, "*";
-			my $stopindex_tumor = index $result{protein_seq_tumor}, "*";
+				# context sequences peptide
+				$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $PEPCONTEXTSIZE);
+				$result{peptide_context_germline} =defined $germline_rna_start ? 
+					$es_germline->get_protein_context_edit($germline_pep_start, $PEPCONTEXTSIZE) : "-";
+				$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $PEPCONTEXTSIZE);
 
-			# context sequences rna
-			$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $CDNACONTEXTSIZE);
-			$result{rna_context_germline} = $es_germline->get_rna_context_edit($germline_rna_start, $CDNACONTEXTSIZE);
-			$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $CDNACONTEXTSIZE);
-
-			# context sequences peptide
-			$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $PEPCONTEXTSIZE);
-			$result{peptide_context_germline} = $es_germline->get_protein_context_edit($germline_pep_start, $PEPCONTEXTSIZE);
-			$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $PEPCONTEXTSIZE);
-
-			$result{aa_pos_ref} = $ref_pep_start;
-			$result{aa_pos_germline} = $germline_pep_start;
-			$result{aa_pos_tumor_start} = $tumor_pep_start;
-			$result{aa_pos_tumor_stop} = $tumor_pep_start;
-
-			# tumor peptides
-			# if this variant induced a frame shift or mutated the stop codon clip until the end
-			if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
-				my $p = $tumor_pep_start - $PEPCONTEXTSIZE - 1;
-				$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
+				$result{aa_pos_ref} = $ref_pep_start;
+				$result{aa_pos_germline} = $germline_pep_start || "-";
 				$result{aa_pos_tumor_start} = $tumor_pep_start;
-				$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
+				$result{aa_pos_tumor_stop} = $tumor_pep_start;
+
+				# tumor peptides
+				# if this variant induced a frame shift or mutated the stop codon clip until the end
+				if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
+					my $p = $tumor_pep_start - $PEPCONTEXTSIZE - 1;
+					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
+					$result{aa_pos_tumor_start} = $tumor_pep_start;
+					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
+				}
+				$result{transcript_remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
+
+			} else {
+				$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 			}
-			$result{transcript_remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
 			#NMD status
 			$result{nmd_status} = $es_tumor->nmd_status;
@@ -242,9 +245,6 @@ sub print_variant_context {
 			$result{transcript_id} = $tid;
 			($result{gene_id}, $result{gene_symbol}) = $self->{ens}->transcript_info($tid);
 
-			if(!exists $result{transcript_remark}) {
-				$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
-			}
 
 			#print the results
 			print join("\t", map {$result{$_} // ""} @columns ), "\n";

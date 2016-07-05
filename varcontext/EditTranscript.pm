@@ -151,8 +151,8 @@ sub _get_genomic_elongation {
 
 sub convert_position_to_edit {
 	my $self = shift;
-	return $self->{rna_editor}->convert_position_to_edit(shift);
-
+	my $newpos = $self->{rna_editor}->convert_position_to_edit(shift);
+	return $newpos <= length($self->{edited_rna}) ? $newpos : undef;
 }
 
 sub get_codon_ref {
