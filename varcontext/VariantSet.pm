@@ -169,6 +169,8 @@ sub print_variant_context {
 			$result{protein_seq_tumor} = $es_tumor->{edited_protein};
 			$result{transcript_extension} = $es_tumor->{transcript_extension} || 0;
 
+			$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
+
 			#ref rna start and end are 1-based
 			my ($ref_rna_start, $ref_rna_end) = $v->map_to_transcriptid($tid);
 			my $germline_rna_start = $es_germline->convert_position_to_edit($ref_rna_start);
@@ -233,10 +235,8 @@ sub print_variant_context {
 					$result{aa_pos_tumor_start} = $tumor_pep_start;
 					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 				}
-				$result{transcript_remark} = "variant after gained stop" if $tumor_pep_start > length($result{protein_seq_tumor});
+				$result{transcript_remark} = "variant_after_gained_stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
-			} else {
-				$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 			}
 
 			#NMD status
