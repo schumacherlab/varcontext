@@ -156,7 +156,9 @@ sub print_variant_context {
 
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
-		next if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
+		# UPDATE: do print SNP info, so we can do sanety check after predictions:
+		# No predicted epitopes should be found where contributing variants only contain SNP(s)
+		# next if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
 
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
 			
