@@ -30,6 +30,7 @@ sub new {
 
 	$self->{options}->{canonical_only} = exists $args{canonical_only} ? $args{canonical_only} : 0;
 	$self->{options}->{peptide_context} = exists $args{peptide_context} ? $args{peptide_context} : 0;
+	$self->{options}->{nmd_status} = exists $args{nmd_status} ? $args{nmd_status} : 0;
 
 	return $self;
 }
@@ -136,8 +137,9 @@ sub print_variant_context {
 		gene_symbol
 		variant_classification
 		transcript_remark
-		transcript_extension
-		nmd_status
+		transcript_extension/;
+	push @columns, qw/nmd_status/ if $self->{options}->{nmd_status};
+	push @columns, qw/
 		codon_ref
 		codon_germline
 		codon_tumor
