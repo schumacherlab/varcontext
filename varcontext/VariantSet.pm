@@ -130,15 +130,20 @@ sub print_variant_context {
 		chromosome
 		start_position
 		end_position
+		strand
 		ref_allele
 		alt_allele
+		ref_read_count
+		alt_read_count
+		vaf
+		rna_expression
 		gene_id
 		transcript_id
-		gene_symbol
+		hugo_symbol
 		variant_classification
 		transcript_remark
 		transcript_extension/;
-	push @columns, qw/nmd_status/ if $self->{options}->{nmd_status};
+	push @columns, qw/nmd_status nmd_remark/ if $self->{options}->{nmd_status};
 	push @columns, qw/
 		codon_ref
 		codon_germline
@@ -241,14 +246,13 @@ sub print_variant_context {
 
 			}
 
-			#NMD status
-			$result{nmd_status} = $es_tumor->nmd_status;
-			
 			# add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele type effect variant_classification/;
+			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele ref_read_count alt_read_count vaf rna_expression type effect variant_classification/;
 			$result{transcript_id} = $tid;
-			($result{gene_id}, $result{gene_symbol}) = $self->{ens}->transcript_info($tid);
+			($result{gene_id}, $result{hugo_symbol}, $result{strand}) = $self->{ens}->transcript_info($tid);
 
+			# get NMD status & remark
+			( $result{nmd_status}, $result{nmd_remark} ) = $es_tumor->nmd_status;
 
 			#print the results
 			print join("\t", map {$result{$_} // ""} @columns ), "\n";

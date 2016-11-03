@@ -31,9 +31,14 @@ my $file = shift;
 open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
 $csv->column_names ($csv->getline ($fh));
 while ( my $row = $csv->getline( $fh ) ) {
-	my $id = $row->[2];
-	(my $ref = $row->[3]) =~ s/-|\.//g;
-	(my $alt = $row->[4]) =~ s/-|\.//g;
+	my $id = $row->[0];
+	(my $ref = $row->[7]) =~ s/-|\.//g;
+	(my $alt = $row->[8]) =~ s/-|\.//g;
+
+	my $ref_read_count = defined $row->[11] ? $row->[11] : '';
+	my $alt_read_count = defined $row->[10] ? $row->[10] : '';
+	my $vaf = defined $row->[12] ? $row->[12] : '';
+	my $rna_expression = defined $row->[9] ? $row->[9] : '';
 	
 	# check if multiple alt's present
 	if ($alt =~ m/,/) {
@@ -42,7 +47,7 @@ while ( my $row = $csv->getline( $fh ) ) {
 	}
 
 	# make new variant and add to variant set
-	my $v = Variant->new(variant_id=>$id, chromosome=>$row->[0], start_position=>$row->[1], ref_allele=>$ref, alt_allele=>$alt);
+	my $v = Variant->new(variant_id=>$id, chromosome=>$row->[3], start_position=>$row->[4], ref_allele=>$ref, alt_allele=>$alt, ref_read_count=>$ref_read_count, alt_read_count=>$alt_read_count, vaf=>$vaf, rna_expression=>$rna_expression);
 	$vs->add($v);
 }
 
