@@ -247,14 +247,18 @@ sub get_protein_context_edit {
 
 sub nmd_status {
 	# - Premature Termination Codon (PTC) is upstream of Normal Termination Codon (NTC)
-	# - PTC is more than 55 nt upstream of exon-exon junction
-	# - PTC is not in last exon
+	# - PTC is between start codon and stop codon (first exon does not necessarily contain start codon, last exon not necessarily contains stop codon)
+	# - Rules below flag transcript for NMD
+	#1 - PTC is > 100nt downstream of start codon
+	#2 - PTC is > 50 nt upstream of the last exon junction complex (deposited on exon-exon junctions)
+	#3 - PTC is not in last exon
 	my $self = shift;
 
 	croak "Edits not yet applied" unless $self->{applied_edits};
 
-	return $self->{nmd_status} if exists $self->{nmd_status};
+	return ( $self->{nmd_status}, $self->{nmd_remark} ) if exists $self->{nmd_status};
 	$self->{nmd_status} = "FALSE";
+	$self->{nmd_remark} = "";
 
 	my $stopindex_ref = index $self->{ref_protein}, "*";
 	my $stopindex_edit = index $self->{edited_protein}, "*";
@@ -273,18 +277,73 @@ sub nmd_status {
 
 		return if(ref($coords[0]) eq "Bio::EnsEMBL::Mapper::Gap");
 
-		my ($start, $end) = ($coords[0]->{start},  $coords[0]->{end});
-		foreach my $exon (@exons[0..($#exons-1)]) {
-			#FIXME, check distance
-			#Also depending on transctipt strand the 55bp distance should be comapared with either start or end?
-			if( $start >= $exon->seq_region_start && $end <= $exon->seq_region_end - 55 ) {
-				$self->{nmd_status} = "TRUE";
-				last;
+		my $t_strand = $self->{transcript}->strand;
+		my $start_site = $self->{transcript}->coding_region_start;
+		my $stop_site = $self->{transcript}->coding_region_end;
+		my ($ptc_start, $ptc_end) = ($coords[0]->{start},  $coords[0]->{end});
+
+		#print $ptc_start . "-" . $ptc_end . "\n";
+
+		# sanity check - PTC is between start & stop
+		return ( $self->{nmd_status}, $self->{nmd_remark} ) unless ( $ptc_start >= $start_site && $ptc_end <= $stop_site );
+
+		# find out which is the last exon
+		my $last_exon = 0;
+		foreach my $exon (@exons) {
+			$last_exon++;
+			if ( $t_strand eq 1 ){
+				last if ( $stop_site >= $exon->seq_region_start && $stop_site <= $exon->seq_region_end );	
+			} elsif ( $t_strand eq -1 ) {
+				last if ( $start_site >= $exon->seq_region_start && $start_site <= $exon->seq_region_end );	
 			}
+			
 		}
 
-	}	
-	return $self->{nmd_status};
+		# rule 1 - check if PTC is within 100nt from start codon
+		if ( $stopindex_edit * 3 + 1 <= 100 ) {
+				$self->{nmd_status} = "FALSE";
+				$self->{nmd_remark} = "PTC within 100nt of start";
+				return ( $self->{nmd_status}, $self->{nmd_remark} );
+		}
+
+		my $exon_count = 0;
+		foreach my $exon (@exons) {
+			$exon_count++;
+
+			if ( $t_strand eq 1 ) {
+				# rule 2 - check if PTC falls within 50nt upstream of last EJC
+				if ( $ptc_start >= $exon->seq_region_end - 50 && $ptc_end <= $exon->seq_region_end && $exon_count eq $last_exon - 1 ) {
+					$self->{nmd_status} = "FALSE";
+					$self->{nmd_remark} = "PTC <50nt upstream of last EJC";
+					last;
+				} elsif ( $ptc_start >= $exon->seq_region_start && $ptc_end <= $exon->seq_region_end && $exon_count ne $last_exon) {
+					$self->{nmd_status} = "TRUE";
+					$self->{nmd_remark} = "PTC >50nt upstream of last EJC";
+					last;
+				# rule 3 - check if we are in last exon; if so, stop
+				} elsif ( $exon_count eq $last_exon ) {
+					$self->{nmd_remark} = "PTC in last exon";
+					last;
+				}
+			} elsif ( $t_strand eq -1 ) {
+				# rule 2 - check if PTC falls within 50nt upstream of last EJC
+				if ( $ptc_start >= $exon->seq_region_start && $ptc_end <= $exon->seq_region_start + 50 && $exon_count eq $last_exon - 1 ) {
+					$self->{nmd_status} = "FALSE";
+					$self->{nmd_remark} = "PTC <50nt upstream of last EJC";
+					last;
+				} elsif ( $ptc_start >= $exon->seq_region_start && $ptc_end <= $exon->seq_region_end && $exon_count ne $last_exon ) {
+					$self->{nmd_status} = "TRUE";
+					$self->{nmd_remark} = "PTC >50nt upstream of last EJC";
+					last;
+				# rule 3 - check if we are in last exon; if so, stop
+				} elsif ( $exon_count eq $last_exon ) {
+					$self->{nmd_remark} = "PTC in last exon";
+					last;
+				}
+			}
+		}
+	}
+	return ( $self->{nmd_status}, $self->{nmd_remark} );
 }
 
 
