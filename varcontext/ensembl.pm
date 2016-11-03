@@ -101,7 +101,7 @@ sub transcript_info {
 
 	my $g = $t->get_Gene;
 
-	return ($g->stable_id, $g->external_name);
+	return ($g->stable_id, $g->external_name, $t->strand);
 
 }
 
