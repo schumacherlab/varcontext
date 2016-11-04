@@ -90,7 +90,7 @@ sub apply_edits {
 	# sometimes the reference sequence also lacks a stopcodon. If this is the case do not extend the
 	# tumor peptide sequence
 	my $stop = qr/(TAG|TAA|TGA)$/; 
-	if ($self->{rna} =~ m/$stop/ && $edited_rna !~  m/$stop/) {
+	if ($self->{rna} =~ m/$stop/ && !($edited_rna =~  m/$stop/ && length($edited_rna) % 3 == 0)) {
 		#append genomic data until a stop is found in-frame
 		my $elongated_edited_rna = $self->_get_genomic_elongation($edited_rna);
 		$self->{transcript_extension} = length($elongated_edited_rna) - length($edited_rna);
