@@ -243,7 +243,7 @@ sub print_variant_context {
 					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 				} elsif ($v->{variant_classification} eq "insertion_inframe") {
 					$result{aa_pos_tumor_start} = $tumor_pep_start + 1;
-					$result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($result{alt_allele}) - length($result{ref_allele})) / 3);
+					$result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
 				}
 				$result{transcript_remark} = "variant_after_gained_stop" if $tumor_pep_start > length($result{protein_seq_tumor});
 
