@@ -19,13 +19,10 @@ sub new {
 	carp "Provide chromosome start_position ref_allele alt_allele when constructing variant"
 		unless defined $setters{chromosome} && defined $setters{start_position} && defined $setters{ref_allele} && defined $setters{alt_allele};
 
-	$self->{$_} = $setters{$_} foreach qw/chromosome start_position ref_allele alt_allele dna_ref_read_count dna_alt_read_count dna_vaf rna_expression/;
-
-	$self->{variant_id} = $setters{variant_id} if exists $setters{variant_id};
-	$self->{dna_ref_read_count} = $setters{dna_ref_read_count} if exists $setters{dna_ref_read_count};
-	$self->{dna_alt_read_count} = $setters{dna_alt_read_count} if exists $setters{dna_alt_read_count};
-	$self->{dna_vaf} = $setters{dna_vaf} if exists $setters{dna_vaf};
-	$self->{rna_expression} = $setters{rna_expression} if exists $setters{rna_expression};
+	$self->{$_} = $setters{$_} foreach qw/variant_id chromosome start_position ref_allele alt_allele
+											dna_ref_read_count dna_alt_read_count dna_total_read_count dna_vaf
+											rna_ref_read_count rna_alt_read_count rna_total_read_count rna_vaf
+											rna_alt_expression/;
 	
 	#trim left identical bases for ref alt combo
 	my $minlength  = length($self->{ref_allele}) < length($self->{alt_allele}) ? length($self->{ref_allele}) : length($self->{alt_allele});

@@ -135,8 +135,13 @@ sub print_variant_context {
 		alt_allele
 		dna_ref_read_count
 		dna_alt_read_count
+		dna_total_read_count
 		dna_vaf
-		rna_expression
+		rna_ref_read_count
+		rna_alt_read_count
+		rna_total_read_count
+		rna_vaf
+		rna_alt_expression
 		gene_id
 		transcript_id
 		transcript_strand
