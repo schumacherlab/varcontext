@@ -256,7 +256,10 @@ sub print_variant_context {
 			}
 
 			# add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele dna_ref_read_count dna_alt_read_count dna_vaf rna_expression type effect variant_classification/;
+			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele 
+													dna_ref_read_count dna_alt_read_count dna_total_read_count dna_vaf 
+													rna_ref_read_count rna_alt_read_count rna_total_read_count rna_vaf
+													rna_alt_expression type effect variant_classification/;
 			$result{variant_strand} = int 1;
 			$result{transcript_id} = $tid;
 			($result{gene_id}, $result{hugo_symbol}, $result{transcript_strand}) = $self->{ens}->transcript_info($tid);
