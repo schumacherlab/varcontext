@@ -104,8 +104,8 @@ sub apply_variants {
 				$v->remove_affected_transcriptid($tid);
 				next;
 			}
-			#apply SNP's only  to germline edit
-			$germline_transcript->apply_variant($v) if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
+			# apply SNP's only  to germline edit (rs identifiers are annotated by MuTect2, can contain pathogenic variants)
+			$germline_transcript->apply_variant($v) if exists $v->{variant_id} && $v->{variant_id} =~ m/^gs\d+$/;
 			$nedits += $haseffect;
 		}
 		if ($nedits > 0) {
