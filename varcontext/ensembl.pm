@@ -27,9 +27,9 @@ sub new {
 	my $registry = 'Bio::EnsEMBL::Registry';
 
 	$registry->load_registry_from_db(
-		-host =>  'utonium.nki.nl',
-		-user =>  'ensro',
-		-pass =>  'ensro',
+		-host =>  'localhost',
+		-user =>  'varcontext',
+		-pass =>  'generatetranscripts',
 		-verbose=>0,
 		-mysql_skip_secure_auth=>1
 	);
