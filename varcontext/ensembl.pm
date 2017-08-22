@@ -3,10 +3,14 @@ use strict;
 use warnings;
 
 use Carp;
- 
+use File::Spec;
 use FindBin;
-use lib ("$FindBin::Bin", map {"/net/NGSanalysis/apps/ensembl/ensembl_75/". $_} qw(ensembl/modules
-	ensembl-variation/modules bioperl-live));
+
+BEGIN { 
+	warn "Please set environment variable ENSEMBLAPI to full Ensembl API path\n" && exit 1 unless defined $ENV{'ENSEMBLAPI'};
+}
+
+use lib ("$FindBin::Bin", map {File::Spec->catdir($ENV{'ENSEMBLAPI'}, $_)} qw(ensembl/modules ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::PredictionTranscript;
@@ -45,7 +49,7 @@ sub get_Transcripts_for_Variant {
 
 	croak "Variant must be type variant" unless ref $variant eq "Variant";
 
-	my $slice = $self->{sa}->fetch_by_region('chromosome', $variant->{chr}, $variant->{start}, $variant->{end});
+	my $slice = $self->{sa}->fetch_by_region('chromosome', $variant->{chromosome}, $variant->{start_position}, $variant->{end_position});
 
 	return [] unless defined $slice;
 	return $slice->get_all_Transcripts;
@@ -54,7 +58,8 @@ sub get_Transcripts_for_Variant {
 sub get_genomic_elongation_for_Transcript {
 	my $self = shift;
 	my $t = shift;
-	my $seq = shift; #the current cDNA sequence that we are going to elongate
+	my $seq = shift; #the current RNA sequence that we are going to elongate
+	my $seq_len = length $seq;
 
 	croak "Transcript must be type Bio::EnsEMBL::Transcript" unless ref $t eq "Bio::EnsEMBL::Transcript";
 
@@ -80,7 +85,7 @@ sub get_genomic_elongation_for_Transcript {
 
 		#find a stop in this seq:
 		while($seq =~ /$stop/g) {
-			return $seq if $-[0] % 3 == 0;
+			return substr($seq, 0, $-[0]) if ($-[0] % 3 == 0);
 		}
 		$extended += 100;
 	}
@@ -94,10 +99,25 @@ sub transcript_info {
 
 	return undef unless defined $t;
 
-	return ($t->get_Gene()->stable_id, $t->external_name);
+	my $g = $t->get_Gene;
+
+	return ($g->stable_id, $g->external_name, $t->strand);
 
 }
 
+sub exon_info {
+	my $self = shift;
+	my $tid = shift;
+
+	my $t = $self->{ta}->fetch_by_stable_id($tid);
+
+	return undef unless defined $t;
+
+	my @exons = @{ $t->get_all_Exons() };
+
+	return (@exons);
+
+}
 
 1;
 
