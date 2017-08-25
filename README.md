@@ -4,7 +4,8 @@
 ### Introduction
 
 Varcontext applies SNVs, indels and complex variants to transcript sequences obtained from ensembl and returns the resulting amino acid sequence, along with other variant information.  
-*Polymorphisms can be taken into account by labeling variants in the mut_id column in the following way: 'gs[0-9]+'.*
+
+**Germline variants are only taken into account as such, when labeled in the variant_id column by: 'gs[0-9]+'. (e.g. gs123)**
 
 ### Installation instructions
 
