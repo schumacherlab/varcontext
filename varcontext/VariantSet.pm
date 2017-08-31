@@ -128,7 +128,7 @@ sub print_variant_context {
 	my @columns = qw/
 		variant_id
 		chromosome
-		start_position
+		start_position_two
 		end_position
 		variant_strand
 		ref_allele
