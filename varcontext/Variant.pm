@@ -23,6 +23,7 @@ sub new {
 											dna_ref_read_count dna_alt_read_count dna_total_read_count dna_vaf
 											rna_ref_read_count rna_alt_read_count rna_total_read_count rna_vaf
 											rna_alt_expression/;
+	$self->{start_position_two} = $self->{start_position}
 	
 	#trim left identical bases for ref alt combo
 	my $minlength  = length($self->{ref_allele}) < length($self->{alt_allele}) ? length($self->{ref_allele}) : length($self->{alt_allele});
