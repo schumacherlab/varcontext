@@ -15,18 +15,29 @@ use Variant;
 use VariantSet;
 use ensembl;
 
+# Command line defaults
 # Input file should be in TSV-format
 my $separator = "\t";
-my $canonical_flag = false;
-my $peptide_flag = false;
-my $nmd_flag = false;
+my $canonical = true;
+my $peptide_context = true;
+my $protein_context = false;
+my $nmd = true;
+my $rna_context = false;
+my $cdnacontextsize = 54;
+GetOptions ("separator=s" => \$separator, 
+            "canonical!" => \$canonical,
+            "peptide_context!" => \$peptide_context, 
+            "protein_context!" => \$protein_context, 
+            "nmd!" => \$nmd,
+            "rna_context!" => \$rna_context,
+            "cdnacontextsize=i" => \$cdnacontextsize); 
 
-GetOptions ("separator" => \$separator, "canonical" => \$canonical_flag,
-            "peptide" => \$peptide_flag, "nmd" => \$nmd_flag );
-
-my $vs = VariantSet->new( canonical_only => $canonical_flag, 
-                          peptide_context => $peptide_flag, 
-                          nmd_status => $nmd_flag);
+my $vs = VariantSet->new(canonical_only => $canonical, 
+                         peptide_context => $peptide_context, 
+                         protein_context => $protein_context, 
+                         nmd_status => $nmd,
+                         rna_context => $rna_context,
+                         cdnacontextsize => $cdnacontextsize); 
 
 # should set binary attribute
 my $csv = Text::CSV->new ( { binary => 1, sep_char => $separator } ) 

@@ -11,8 +11,6 @@ use EditTranscript;
 use Bio::Seq;
 use Bio::Tools::CodonTable;
 
-my $CDNACONTEXTSIZE = 54;
-my $PEPCONTEXTSIZE = $CDNACONTEXTSIZE / 3 + 1;
 my $codontable   = Bio::Tools::CodonTable->new();
 
 sub new {
@@ -28,9 +26,19 @@ sub new {
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
 
-	$self->{options}->{canonical_only} = exists $args{canonical_only} ? $args{canonical_only} : 0;
-	$self->{options}->{peptide_context} = exists $args{peptide_context} ? $args{peptide_context} : 0;
-	$self->{options}->{nmd_status} = exists $args{nmd_status} ? $args{nmd_status} : 0;
+	$self->{options}->{canonical_only} = exists $args{canonical_only} ? 
+    $args{canonical_only} : 0;
+	$self->{options}->{peptide_context} = exists $args{peptide_context} ? 
+    $args{peptide_context} : 0;
+	$self->{options}->{protein_context} = exists $args{protein_context} ? 
+    $args{protein_context} : 0;
+	$self->{options}->{nmd_status} = exists $args{nmd_status} ? 
+    $args{nmd_status} : 0;
+	$self->{options}->{rna_context} = exists $args{rna_context} ? 
+    $args{rna_context} : 0;
+  $self->{options}->{cdnacontextsize} = exists $args{cdnacontextsize} ? 
+    $args{cdnacontextsize} : 54;
+  $self->{options}->{pepcontextsize} = $args{cdnacontextsize} / 3 + 1;
 
 	return $self;
 }
@@ -77,7 +85,7 @@ sub group_variants {
 		$self->{transcripts} = \%transcripts;
 		$self->{transcripts_to_variants} = \%transcripts_to_variants;
 		$self->{stuffadded} = 0;
-	} 
+	}
 }
 
 sub apply_variants {
@@ -162,7 +170,8 @@ sub print_variant_context {
 		aa_pos_tumor_start
 		aa_pos_tumor_stop/;
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
-	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ unless $self->{options}->{peptide_context};
+	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
+	push @columns, qw/rna_context_ref rna_context_germline rna_context_tumor/ if $self->{options}->{rna_context};
 	print join("\t", @columns), "\n";
 
 	foreach my $v (@{$self->{variants}}) {
@@ -181,6 +190,9 @@ sub print_variant_context {
 			$result{protein_seq_germline} = $es_germline->{edited_protein};
 			$result{protein_seq_tumor} = $es_tumor->{edited_protein};
 			$result{transcript_extension} = $es_tumor->{transcript_extension} || 0;
+
+			# $result{rna_seq_germline} = $es_germline->{edited_rna};
+			# $result{rna_seq_tumor} = $es_tumor->{edited_rna};
 
 			$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 
@@ -224,16 +236,16 @@ sub print_variant_context {
 				}
 
 				# context sequences rna
-				$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $CDNACONTEXTSIZE);
+				$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $self->{options}->{cdnacontextsize});
 				$result{rna_context_germline} = defined $germline_rna_start ? 
-					$es_germline->get_rna_context_edit($germline_rna_start, $CDNACONTEXTSIZE) : "-";
-				$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $CDNACONTEXTSIZE);
+					$es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdnacontextsize}) : "-";
+				$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdnacontextsize});
 
 				# context sequences peptide
-				$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $PEPCONTEXTSIZE);
+				$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $self->{options}->{pepcontextsize});
 				$result{peptide_context_germline} =defined $germline_rna_start ? 
-					$es_germline->get_protein_context_edit($germline_pep_start, $PEPCONTEXTSIZE) : "-";
-				$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $PEPCONTEXTSIZE);
+					$es_germline->get_protein_context_edit($germline_pep_start, $self->{options}->{pepcontextsize}) : "-";
+				$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $self->{options}->{pepcontextsize});
 
 				$result{aa_pos_ref} = $ref_pep_start;
 				$result{aa_pos_germline} = $germline_pep_start || "-";
@@ -243,8 +255,8 @@ sub print_variant_context {
 				# tumor peptides
 				# if this variant induced a frame shift or mutated the stop codon clip until the end
 				if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
-					my $p = $tumor_pep_start - $PEPCONTEXTSIZE - 1;
-					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $PEPCONTEXTSIZE-1);
+					my $p = $tumor_pep_start - $self->{options}->{pepcontextsize} - 1;
+					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $self->{options}->{pepcontextsize}-1);
 					$result{aa_pos_tumor_start} = $tumor_pep_start;
 					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 				} elsif ($v->{variant_classification} eq "insertion_inframe") {
