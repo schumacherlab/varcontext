@@ -56,6 +56,7 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
          join("\t", map($row->{$_}, @cols)) . "\n";
     next;
   }
+  # TODO check validity of input, not just existence
   my $position;
   if (defined $row->{'position'}) {
     $position = $row->{'position'};
@@ -70,7 +71,6 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
   (my $alt = $row->{'alt_allele'}) =~ s/-|\.//g;
   my $id = $row->{'variant_id'};
   # Set default values for potentially missing input
-  print $row->{'dna_ref_read_count'};
   my $dna_ref_read_count = defined $row->{'dna_ref_read_count'} ?
     $row->{'dna_ref_read_count'} : '';
   my $dna_alt_read_count = defined $row->{'dna_alt_read_count'} ? 

@@ -11,7 +11,7 @@ use EditTranscript;
 use Bio::Seq;
 use Bio::Tools::CodonTable;
 
-my $codontable   = Bio::Tools::CodonTable->new();
+my $codontable = Bio::Tools::CodonTable->new();
 
 sub new {
 	my $class = shift;	
