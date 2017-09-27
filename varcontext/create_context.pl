@@ -18,9 +18,9 @@ use ensembl;
 # Command line defaults
 # Input file should be in TSV-format
 my $separator = "\t";
-my $canonical = true;
-my $peptide_context = true;
-my $protein_context = false;
+my $canonical = false;
+my $peptide_context = false;
+my $protein_context = true;
 my $nmd = true;
 my $rna_context = false;
 my $cdnacontextsize = 54;
