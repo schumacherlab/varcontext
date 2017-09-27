@@ -24,13 +24,15 @@ my $protein_context = true;
 my $nmd = true;
 my $rna_context = false;
 my $cdnacontextsize = 54;
+my $trim_overlapping_bases = false;
 GetOptions ("separator=s" => \$separator, 
             "canonical!" => \$canonical,
             "peptide_context!" => \$peptide_context, 
             "protein_context!" => \$protein_context, 
             "nmd!" => \$nmd,
             "rna_context!" => \$rna_context,
-            "cdnacontextsize=i" => \$cdnacontextsize); 
+            "cdnacontextsize=i" => \$cdnacontextsize, 
+            "trim_overlapping_bases" => \$trim_overlapping_bases); 
 
 my $vs = VariantSet->new(canonical_only => $canonical, 
                          peptide_context => $peptide_context, 
@@ -48,25 +50,40 @@ open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
 my @cols = @{$csv->getline ($fh)};
 $csv->column_names (@cols);
 while ( my $row = $csv->getline_hr( $fh ) ) {
-  my $chromosome = defined $row->{'chromosome'} ? $row->{'chromosome'} : '';
-  my $id = $row->{'variant_id'};
+  my $chromosome = $row->{'chromosome'};
+  if (length($chromosome) == 0) {
+    warn "# Missing chromosome information for variant, skipping variant\n" . 
+         join("\t", map($row->{$_}, @cols)) . "\n";
+    next;
+  }
+  my $position;
+  if (defined $row->{'position'}) {
+    $position = $row->{'position'};
+  } elsif (defined $row->{'start_position'}) {
+    $position = $row->{'start_position'};
+  } else {
+    warn "# Missing position information for variant, skipping variant\n" . 
+         join("\t", map($row->{$_}, @cols)) . "\n";
+    next;
+  }
   (my $ref = $row->{'ref_allele'}) =~ s/-|\.//g;
   (my $alt = $row->{'alt_allele'}) =~ s/-|\.//g;
-
+  my $id = $row->{'variant_id'};
   # Set default values for potentially missing input
-  my $dna_ref_read_count = defined $row->{'dna_ref_read_count'} ? 
+  print $row->{'dna_ref_read_count'};
+  my $dna_ref_read_count = defined $row->{'dna_ref_read_count'} ?
     $row->{'dna_ref_read_count'} : '';
   my $dna_alt_read_count = defined $row->{'dna_alt_read_count'} ? 
     $row->{'dna_alt_read_count'} : '';
-  my $dna_total_read_count = defined $row->{'dna_total_read_count'} ? 
+  my $dna_total_read_count = defined $row->{'dna_total_read_count'} ?
     $row->{'dna_total_read_count'} : '';
   my $dna_vaf = defined $row->{'dna_vaf'} ? $row->{'dna_vaf'} : '';
 
-  my $rna_ref_read_count = defined $row->{'rna_ref_read_count'} ? 
+  my $rna_ref_read_count = defined $row->{'rna_ref_read_count'} ?
     $row->{'rna_ref_read_count'} : '';
   my $rna_alt_read_count = defined $row->{'rna_alt_read_count'} ? 
     $row->{'rna_alt_read_count'} : '';
-  my $rna_total_read_count = defined $row->{'rna_total_read_count'} ? 
+  my $rna_total_read_count = defined $row->{'rna_total_read_count'} ?
     $row->{'rna_total_read_count'} : '';
   my $rna_alt_expression = defined $row->{'rna_alt_expression'} ? 
     $row->{'rna_alt_expression'} : '';
@@ -74,13 +91,13 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
 
   # check if multiple alt's present
   if ($alt =~ m/,/) {
-    warn "Pruning alt seqs to first listed alt:" . join(",", @$row) . "\n";
+    warn "Pruning alt seqs to first listed alt:" . join("\t", map($row->{$_}, @cols)) . "\n";
     $alt =~ s/,.*//;
   }
    
   # make new variant and add to variant set
   my $v = Variant->new(variant_id=>$id, chromosome=>$chromosome, 
-                       start_position=>$row->{'start_position'}, 
+                       start_position=>$position, 
                        ref_allele=>$ref, alt_allele=>$alt,
                        dna_ref_read_count=>$dna_ref_read_count, 
                        dna_alt_read_count=>$dna_alt_read_count, 
@@ -90,7 +107,8 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
                        rna_alt_read_count=>$rna_alt_read_count, 
                        rna_total_read_count=>$rna_total_read_count, 
                        rna_vaf=>$rna_vaf,
-                       rna_alt_expression=>$rna_alt_expression);
+                       rna_alt_expression=>$rna_alt_expression,
+                       trim_overlapping_bases=>$trim_overlapping_bases);
   $vs->add($v);
 }
 
