@@ -22,7 +22,14 @@ sub new {
 
 	$self->{variants} = [];
 	$self->{stuffadded} = 1;
-
+  # print join(", ", @{$args{extra_field_names}} ) . "\n";
+  # print scalar(@{$args{extra_field_names}}) . "\n";
+  # Test length of extra_field_names
+	# $self->{extra_field_names} = scalar(@{$args{extra_field_names}}) > 0 ? 
+  #                                     @{$args{extra_field_names}} : ();
+	$self->{extra_field_names} = \@{$args{extra_field_names}};
+  # print scalar(@{$self->{extra_field_names}}) . "\n";
+  # print join(", ", @{$self->{extra_field_names}} ) . "\n";
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
 
@@ -141,15 +148,6 @@ sub print_variant_context {
 		variant_strand
 		ref_allele
 		alt_allele
-		dna_ref_read_count
-		dna_alt_read_count
-		dna_total_read_count
-		dna_vaf
-		rna_ref_read_count
-		rna_alt_read_count
-		rna_total_read_count
-		rna_vaf
-		rna_alt_expression
 		gene_id
 		transcript_id
 		transcript_strand
@@ -158,21 +156,14 @@ sub print_variant_context {
 		transcript_remark
 		transcript_extension/;
 	push @columns, qw/nmd_status nmd_remark/ if $self->{options}->{nmd_status};
-	push @columns, qw/
-		codon_ref
-		codon_germline
-		codon_tumor
-		aa_ref
-		aa_germline
-		aa_tumor
-		aa_pos_ref
-		aa_pos_germline
-		aa_pos_tumor_start
-		aa_pos_tumor_stop/;
+	push @columns, qw/ codon_ref codon_germline codon_tumor aa_ref aa_germline
+                     aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start 
+                     aa_pos_tumor_stop/;
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
 	push @columns, qw/rna_context_ref rna_context_germline rna_context_tumor/ if $self->{options}->{rna_context};
-	print join("\t", @columns), "\n";
+	print join("\t", @columns);
+	print join("\t", @{$self->{extra_field_names}}) . "\n";
 
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
@@ -190,9 +181,6 @@ sub print_variant_context {
 			$result{protein_seq_germline} = $es_germline->{edited_protein};
 			$result{protein_seq_tumor} = $es_tumor->{edited_protein};
 			$result{transcript_extension} = $es_tumor->{transcript_extension} || 0;
-
-			# $result{rna_seq_germline} = $es_germline->{edited_rna};
-			# $result{rna_seq_tumor} = $es_tumor->{edited_rna};
 
 			$result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 
@@ -268,10 +256,8 @@ sub print_variant_context {
 			}
 
 			# add remaining info
-			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele 
-													dna_ref_read_count dna_alt_read_count dna_total_read_count dna_vaf 
-													rna_ref_read_count rna_alt_read_count rna_total_read_count rna_vaf
-													rna_alt_expression type effect variant_classification/;
+			$result{$_} = $v->{$_} // "" foreach qw/variant_id chromosome start_position end_position ref_allele alt_allele type effect variant_classification/;
+			# $result{extra_fields} = $v->{extra_fields} // "";
 			$result{variant_strand} = int 1;
 			$result{transcript_id} = $tid;
 			($result{gene_id}, $result{hugo_symbol}, $result{transcript_strand}) = $self->{ens}->transcript_info($tid);
@@ -279,8 +265,13 @@ sub print_variant_context {
 			# get NMD status & remark
 			( $result{nmd_status}, $result{nmd_remark} ) = $es_tumor->nmd_status;
 
-			#print the results
-			print join("\t", map {$result{$_} // ""} @columns ), "\n";
+			# print join("\t", @columns ), "\n";
+			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
+      
+			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
+			# Print the results to STDOUT
+			print join("\t", map {$result{$_} // ""} @columns);
+			print join("\t", @{$v->{extra_fields}}) . "\n";
 		}
 	}
 }

@@ -34,13 +34,6 @@ GetOptions ("separator=s" => \$separator,
             "cdnacontextsize=i" => \$cdnacontextsize, 
             "trim_overlapping_bases" => \$trim_overlapping_bases); 
 
-my $vs = VariantSet->new(canonical_only => $canonical, 
-                         peptide_context => $peptide_context, 
-                         protein_context => $protein_context, 
-                         nmd_status => $nmd,
-                         rna_context => $rna_context,
-                         cdnacontextsize => $cdnacontextsize); 
-
 # should set binary attribute
 my $csv = Text::CSV->new ( { binary => 1, sep_char => $separator } ) 
   or die "Cannot use CSV: ".Text::CSV->error_diag ();
@@ -48,6 +41,36 @@ my $file = shift;
 
 open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
 my @cols = @{$csv->getline ($fh)};
+# Ensure column names are strictly in lowercase 
+@cols = map { lc } @cols;
+
+# Determine names of non-obligatory columns
+# Perl does not have high-level set functionality, so we use a hash instead
+my @obligatory_cols = ('variant_id', 'chromosome', 'position',
+                       'start_position', 'ref_allele', 'alt_allele');
+my @extra_cols = (); my %count_cols = (); my $e;
+foreach $e (@cols, @obligatory_cols) { 
+  $count_cols{$e}++;
+}
+foreach $e (keys %count_cols) {
+  # print $e . " " . $count_cols{$e} > 1 . "\n";
+  if ($count_cols{$e} == 1 && $e !~ m/start_position/ && $e !~ m/position/) {
+    push @extra_cols, $e;
+  }
+}
+@extra_cols = sort @extra_cols;
+# print join(", ", @extra_cols) . "\n";
+# exit;
+ 
+my $vs = VariantSet->new(canonical_only => $canonical, 
+                         peptide_context => $peptide_context, 
+                         protein_context => $protein_context, 
+                         nmd_status => $nmd,
+                         extra_field_names => \@extra_cols,
+                         rna_context => $rna_context,
+                         cdnacontextsize => $cdnacontextsize); 
+
+
 $csv->column_names (@cols);
 while ( my $row = $csv->getline_hr( $fh ) ) {
   my $chromosome = $row->{'chromosome'};
@@ -70,44 +93,23 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
   (my $ref = $row->{'ref_allele'}) =~ s/-|\.//g;
   (my $alt = $row->{'alt_allele'}) =~ s/-|\.//g;
   my $id = $row->{'variant_id'};
-  # Set default values for potentially missing input
-  my $dna_ref_read_count = defined $row->{'dna_ref_read_count'} ?
-    $row->{'dna_ref_read_count'} : '';
-  my $dna_alt_read_count = defined $row->{'dna_alt_read_count'} ? 
-    $row->{'dna_alt_read_count'} : '';
-  my $dna_total_read_count = defined $row->{'dna_total_read_count'} ?
-    $row->{'dna_total_read_count'} : '';
-  my $dna_vaf = defined $row->{'dna_vaf'} ? $row->{'dna_vaf'} : '';
-
-  my $rna_ref_read_count = defined $row->{'rna_ref_read_count'} ?
-    $row->{'rna_ref_read_count'} : '';
-  my $rna_alt_read_count = defined $row->{'rna_alt_read_count'} ? 
-    $row->{'rna_alt_read_count'} : '';
-  my $rna_total_read_count = defined $row->{'rna_total_read_count'} ?
-    $row->{'rna_total_read_count'} : '';
-  my $rna_alt_expression = defined $row->{'rna_alt_expression'} ? 
-    $row->{'rna_alt_expression'} : '';
-  my $rna_vaf = defined $row->{'rna_vaf'} ? $row->{'rna_vaf'} : '';
 
   # check if multiple alt's present
   if ($alt =~ m/,/) {
     warn "Pruning alt seqs to first listed alt:" . join("\t", map($row->{$_}, @cols)) . "\n";
     $alt =~ s/,.*//;
   }
+
+  # Ordering of extra fields is ensured using this array
+  my @extra_fields = map $row->{$_} // '', @extra_cols;
+  # print join(", ", @extra_fields ) . "\n";
    
   # make new variant and add to variant set
-  my $v = Variant->new(variant_id=>$id, chromosome=>$chromosome, 
+  my $v = Variant->new(variant_id=>$id, 
+                       chromosome=>$chromosome, 
                        start_position=>$position, 
                        ref_allele=>$ref, alt_allele=>$alt,
-                       dna_ref_read_count=>$dna_ref_read_count, 
-                       dna_alt_read_count=>$dna_alt_read_count, 
-                       dna_total_read_count=>$dna_total_read_count, 
-                       dna_vaf=>$dna_vaf,
-                       rna_ref_read_count=>$rna_ref_read_count, 
-                       rna_alt_read_count=>$rna_alt_read_count, 
-                       rna_total_read_count=>$rna_total_read_count, 
-                       rna_vaf=>$rna_vaf,
-                       rna_alt_expression=>$rna_alt_expression,
+                       extra_fields=>\@extra_fields,
                        trim_overlapping_bases=>$trim_overlapping_bases);
   $vs->add($v);
 }

@@ -20,10 +20,11 @@ sub new {
     unless defined $setters{chromosome} && defined $setters{start_position} &&
     defined $setters{ref_allele} && defined $setters{alt_allele};
 
+  # print $setters{variant_id} . "\n";
+  # print join(", ", @{$setters{extra_fields}}) . "\n";
   $self->{$_} = $setters{$_} foreach qw/variant_id chromosome start_position
-    ref_allele alt_allele dna_ref_read_count dna_alt_read_count
-    dna_total_read_count dna_vaf rna_ref_read_count rna_alt_read_count
-    rna_total_read_count rna_vaf rna_alt_expression/;
+    ref_allele alt_allele extra_fields/;
+  # print join(", ", @{$self->{extra_fields}} ) . "\n";
 
   # N.B. This setting potentially influences variant type inference
   if ($setters{trim_overlapping_bases}) {

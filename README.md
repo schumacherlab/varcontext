@@ -24,19 +24,15 @@ For the perl script to run, you also might need the following modules:
 
 ### Input file definition
 
-Input files should contain at least the following columns (in no particular order):
-
-| variant_id | chromosome | start_position | ref_allele | alt_allele |
-|------------|------------|----------------|------------|------------|
-
-Optional columns are:
-
-| dna\_ref\_read\_count | dna\_alt\_read\_count | dna\_total\_read\_count | dna_vaf | rna\_ref\_read\_count | rna\_alt\_read\_count | rna\_total\_read\_count | rna_vaf | rna\_alt\_expression |
-|--------|--------|----------|--------|--------|--------|----------|----------------|------------|
+Input files contain at least the following columns (in no particular order, 
+case-insensitive): `variant_id`, `chromosome`, `start_position` or `position`, 
+`ref_allele` and `alt_allele`.  Additional extra columns with variant annotation will 
+remain unaltered and outputted in the output of VC.
 
 ### Usage example
 
-Varcontext can be called from a wrapper script (availabe in `neolution-prep`) or directly from the Terminal by:
+Varcontext can be called from a wrapper script (availabe in `neolution-prep`) or directly 
+from a shell by:
 
 `export ENSEMBLAPI=/path/to/ensembl_api/;perl /path/to/varcontext/create_context.pl --ARGUMENTS INPUT_FILE 1> OUTPUT_FILE 2> LOG_FILE`
 
@@ -56,7 +52,6 @@ Varcontext can be called from a wrapper script (availabe in `neolution-prep`) or
 
 
 
-
 ### Package definitions
 
 - ensembl - a wrapper around the Ensembl API
@@ -70,6 +65,3 @@ Varcontext can be called from a wrapper script (availabe in `neolution-prep`) or
 - VCF input 
 - NORMAL control samples 
 - Write tests (e.g. a testset of genes with a couple of designed mutations)
-
-
-
