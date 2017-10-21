@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use diagnostics;
 
 use constant false => 0;
 use constant true  => 1;
@@ -44,23 +45,22 @@ my @cols = @{$csv->getline ($fh)};
 # Ensure column names are strictly in lowercase 
 @cols = map { lc } @cols;
 
-# Determine names of non-obligatory columns
+# Determine names of non-obligatory, extra columns
 # Perl does not have high-level set functionality, so we use a hash instead
 my @obligatory_cols = ('variant_id', 'chromosome', 'position',
                        'start_position', 'ref_allele', 'alt_allele');
 my @extra_cols = (); my %count_cols = (); my $e;
 foreach $e (@cols, @obligatory_cols) { 
+  ## Obligatory cols will get count of 2, optional cols 1
   $count_cols{$e}++;
 }
 foreach $e (keys %count_cols) {
-  # print $e . " " . $count_cols{$e} > 1 . "\n";
   if ($count_cols{$e} == 1 && $e !~ m/start_position/ && $e !~ m/position/) {
     push @extra_cols, $e;
   }
 }
-@extra_cols = sort @extra_cols;
+# @extra_cols = sort @extra_cols;
 # print join(", ", @extra_cols) . "\n";
-# exit;
  
 my $vs = VariantSet->new(canonical_only => $canonical, 
                          peptide_context => $peptide_context, 
@@ -100,7 +100,7 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
     $alt =~ s/,.*//;
   }
 
-  # Ordering of extra fields is ensured using this array
+  # Constant ordering of extra fields is ensured using this array
   my @extra_fields = map $row->{$_} // '', @extra_cols;
   # print join(", ", @extra_fields ) . "\n";
    
@@ -108,8 +108,9 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
   my $v = Variant->new(variant_id=>$id, 
                        chromosome=>$chromosome, 
                        start_position=>$position, 
-                       ref_allele=>$ref, alt_allele=>$alt,
-                       extra_fields=>\@extra_fields,
+                       ref_allele=>$ref, 
+                       alt_allele=>$alt,
+                       extra_fields=>@extra_fields,
                        trim_overlapping_bases=>$trim_overlapping_bases);
   $vs->add($v);
 }

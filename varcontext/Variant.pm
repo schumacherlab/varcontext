@@ -14,27 +14,42 @@ sub new {
   my $self = {};
   bless $self, $class;
 
-  my %setters = @_;
-
-  carp "Provide chromosome start_position ref_allele alt_allele when constructing variant"
-    unless defined $setters{chromosome} && defined $setters{start_position} &&
+  ## We need to unpack the _ array (@_) and populate the class's hash (%{$self})
+  ## Slice first ten entries for mandatory fields
+  my %setters = @_[ 0..9 ];
+  carp "Provide variant_id chromosome start_position ref_allele alt_allele" .
+       "when constructing variant"
+    unless defined $setters{variant_id} && defined $setters{chromosome} &&
+    defined $setters{start_position} &&
     defined $setters{ref_allele} && defined $setters{alt_allele};
-
-  # print $setters{variant_id} . "\n";
-  # print join(", ", @{$setters{extra_fields}}) . "\n";
   $self->{$_} = $setters{$_} foreach qw/variant_id chromosome start_position
-    ref_allele alt_allele extra_fields/;
-  # print join(", ", @{$self->{extra_fields}} ) . "\n";
+    ref_allele alt_allele/;
 
-  # N.B. This setting potentially influences variant type inference
-  if ($setters{trim_overlapping_bases}) {
-    # Trim left identical bases for ref alt combo
+  ## Slice field 11 til 2nd from last for extra fields
+  my @extra_fields = @_[ 11..($#_-2) ];
+  # print 'extra fields: ' . join(", ", @extra_fields) . "\n";
+  if ($#extra_fields > 0) {
+    ## Deep copy @extra_fields for security purposes
+    $self->{extra_fields} = [ @extra_fields ];
+  } else {
+    $self->{extra_fields} = [ ];
+  }
+  # print 'extra fields: ' . join(", ", @{$self->{extra_fields}} ) . "\n";
+   
+  ## Slice last field for trim_overlapping_bases
+  my $trim_overlapping_bases = $_[ $#_ ];
+  # print 'trim_overlapping_bases:' . $trim_overlapping_bases . "\n";
+
+  ## N.B. This setting potentially influences variant type inference
+  if ($trim_overlapping_bases) {
+    ## Trim left identical bases for ref alt combo
     my $minlength = length($self->{ref_allele}) < length($self->{alt_allele}) ? 
       length($self->{ref_allele}) : length($self->{alt_allele});
-    # Determine position of first mismatch between ref and alt alleles
+    ## Determine position of first mismatch between ref and alt alleles
     my $pos = 0;
     while($minlength > 0 && $pos < $minlength) {
-      last if substr($self->{ref_allele}, $pos, 1) ne substr($self->{alt_allele}, $pos, 1);
+      last if substr($self->{ref_allele}, $pos, 1) ne 
+      substr($self->{alt_allele}, $pos, 1);
       $pos++;
     }
     if ($pos > 0) {
@@ -44,26 +59,30 @@ sub new {
     }
   }
   
-  if($self->{ref_allele} eq $self->{alt_allele}) {
-    croak $self->{variant_id} . " # Not a variant (ref_allele/alt_allele identical): '" . 
-      $self->to_string . "'";
+  if ($self->{ref_allele} eq $self->{alt_allele}) {
+    croak $self->{variant_id} . 
+    " # Not a variant (ref_allele/alt_allele identical): '" . 
+    $self->to_string . "'";
   }
 
-  #infer type
+  ## Infer type
   if (length($self->{ref_allele}) == length($self->{alt_allele})) {
     $self->{type} = "substitution";
-  } elsif (length($self->{ref_allele}) == 0 && length($self->{alt_allele}) > 0) {
+  } elsif (length($self->{ref_allele}) == 0 && 
+           length($self->{alt_allele}) > 0) {
     $self->{type} = "insertion";
-  } elsif (length($self->{ref_allele}) > 0 && length($self->{alt_allele}) == 0) {
+  } elsif (length($self->{ref_allele}) > 0 && 
+           length($self->{alt_allele}) == 0) {
     $self->{type} = "deletion";
   } else {
     $self->{type} = "complex";
   }
 
-  #calc end
-  $self->{end_position} = $self->{start_position} + length($self->{ref_allele}) - 1 ;
+  ## Calc end
+  $self->{end_position} = $self->{start_position} + 
+    length($self->{ref_allele}) - 1 ;
 
-  #prepare target maps
+  ## Prepare target maps
   $self->{affected_transcriptids} = {};
   $self->{transcript_map} = {};
   

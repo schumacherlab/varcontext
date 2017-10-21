@@ -27,9 +27,10 @@ sub new {
   # Test length of extra_field_names
 	# $self->{extra_field_names} = scalar(@{$args{extra_field_names}}) > 0 ? 
   #                                     @{$args{extra_field_names}} : ();
-	$self->{extra_field_names} = \@{$args{extra_field_names}};
+	$self->{extra_field_names} = [ @{$args{extra_field_names}} ];
   # print scalar(@{$self->{extra_field_names}}) . "\n";
-  # print join(", ", @{$self->{extra_field_names}} ) . "\n";
+  # print 'Extra field names: ' . 
+  #   join(", ", @{$self->{extra_field_names}} ) . "\n";
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new();
 
