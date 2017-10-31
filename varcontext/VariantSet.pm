@@ -14,7 +14,7 @@ use Bio::Tools::CodonTable;
 my $codontable = Bio::Tools::CodonTable->new();
 
 sub new {
-	my $class = shift;	
+	my $class = shift;
 	my $self = {};
 	bless $self, $class;
 
@@ -22,31 +22,37 @@ sub new {
 
 	$self->{variants} = [];
 	$self->{stuffadded} = 1;
-  # print join(", ", @{$args{extra_field_names}} ) . "\n";
-  # print scalar(@{$args{extra_field_names}}) . "\n";
-  # Test length of extra_field_names
-	# $self->{extra_field_names} = scalar(@{$args{extra_field_names}}) > 0 ? 
-  #                                     @{$args{extra_field_names}} : ();
+	# print join(", ", @{$args{extra_field_names}} ) . "\n";
+	# print scalar(@{$args{extra_field_names}}) . "\n";
+	# Test length of extra_field_names
+	# $self->{extra_field_names} = scalar(@{$args{extra_field_names}}) > 0 ?
+	#                                     @{$args{extra_field_names}} : ();
 	$self->{extra_field_names} = [ @{$args{extra_field_names}} ];
-  # print scalar(@{$self->{extra_field_names}}) . "\n";
-  # print 'Extra field names: ' . 
-  #   join(", ", @{$self->{extra_field_names}} ) . "\n";
-	# prepare an ensembl connection wrapper
-	$self->{ens} = ensembl->new();
+	# print scalar(@{$self->{extra_field_names}}) . "\n";
+	# print 'Extra field names: ' .
+	#   join(", ", @{$self->{extra_field_names}} ) . "\n";
 
-	$self->{options}->{canonical_only} = exists $args{canonical_only} ? 
-    $args{canonical_only} : 0;
-	$self->{options}->{peptide_context} = exists $args{peptide_context} ? 
-    $args{peptide_context} : 0;
-	$self->{options}->{protein_context} = exists $args{protein_context} ? 
-    $args{protein_context} : 0;
-	$self->{options}->{nmd_status} = exists $args{nmd_status} ? 
-    $args{nmd_status} : 0;
-	$self->{options}->{rna_context} = exists $args{rna_context} ? 
-    $args{rna_context} : 0;
-  $self->{options}->{cdnacontextsize} = exists $args{cdnacontextsize} ? 
-    $args{cdnacontextsize} : 54;
-  $self->{options}->{pepcontextsize} = $args{cdnacontextsize} / 3 + 1;
+	$self->{options}->{ensembl_build} = exists $args{ensembl_build} ?
+	$args{ensembl_build} : 0;
+	$self->{options}->{assembly} = exists $args{assembly} ?
+	$args{assembly} : 0;
+	$self->{options}->{canonical_only} = exists $args{canonical_only} ?
+	$args{canonical_only} : 0;
+	$self->{options}->{peptide_context} = exists $args{peptide_context} ?
+	$args{peptide_context} : 0;
+	$self->{options}->{protein_context} = exists $args{protein_context} ?
+	$args{protein_context} : 0;
+	$self->{options}->{nmd_status} = exists $args{nmd_status} ?
+	$args{nmd_status} : 0;
+	$self->{options}->{rna_context} = exists $args{rna_context} ?
+	$args{rna_context} : 0;
+	$self->{options}->{cdnacontextsize} = exists $args{cdnacontextsize} ?
+	$args{cdnacontextsize} : 54;
+	$self->{options}->{pepcontextsize} = $args{cdnacontextsize} / 3 + 1;
+
+	# prepare an ensembl connection wrapper
+	$self->{ens} = ensembl->new(ensembl_build => $self->{options}->{ensembl_build},
+								assembly      => $self->{options}->{assembly});
 
 	return $self;
 }
@@ -157,9 +163,9 @@ sub print_variant_context {
 		transcript_remark
 		transcript_extension/;
 	push @columns, qw/nmd_status nmd_remark/ if $self->{options}->{nmd_status};
-	push @columns, qw/ codon_ref codon_germline codon_tumor aa_ref aa_germline
-                     aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start 
-                     aa_pos_tumor_stop/;
+	push @columns, qw/codon_ref codon_germline codon_tumor aa_ref aa_germline
+					aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start
+					aa_pos_tumor_stop/;
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
 	push @columns, qw/rna_context_ref rna_context_germline rna_context_tumor/ if $self->{options}->{rna_context};
@@ -173,7 +179,7 @@ sub print_variant_context {
 		# next if exists $v->{variant_id} && $v->{variant_id} =~ m/^[gr]s\d+$/;
 
 		foreach my $tid (keys %{$v->{affected_transcriptids}}) {
-			
+
 			my $es_germline = $self->{edit_transcripts}->{germline}->{$tid};
 			my $es_tumor = $self->{edit_transcripts}->{tumor}->{$tid};
 
@@ -226,13 +232,13 @@ sub print_variant_context {
 
 				# context sequences rna
 				$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $self->{options}->{cdnacontextsize});
-				$result{rna_context_germline} = defined $germline_rna_start ? 
+				$result{rna_context_germline} = defined $germline_rna_start ?
 					$es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdnacontextsize}) : "-";
 				$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdnacontextsize});
 
 				# context sequences peptide
 				$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $self->{options}->{pepcontextsize});
-				$result{peptide_context_germline} =defined $germline_rna_start ? 
+				$result{peptide_context_germline} =defined $germline_rna_start ?
 					$es_germline->get_protein_context_edit($germline_pep_start, $self->{options}->{pepcontextsize}) : "-";
 				$result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $self->{options}->{pepcontextsize});
 
@@ -268,7 +274,7 @@ sub print_variant_context {
 
 			# print join("\t", @columns ), "\n";
 			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
-      
+
 			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
 			# Print the results to STDOUT
 			print join("\t", map {$result{$_} // ""} @columns);

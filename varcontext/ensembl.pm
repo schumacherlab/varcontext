@@ -6,12 +6,13 @@ use Carp;
 use File::Spec;
 use FindBin;
 
-BEGIN { 
+BEGIN {
 	warn "Please set environment variable ENSEMBLAPI to full Ensembl API path\n" && exit 1 unless defined $ENV{'ENSEMBLAPI'};
 }
 
 use lib ("$FindBin::Bin", map {File::Spec->catdir($ENV{'ENSEMBLAPI'}, $_)} qw(ensembl/modules ensembl-variation/modules bioperl-live));
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::PredictionTranscript;
 use Bio::Seq;
@@ -22,26 +23,42 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
+	my %args = @_;
 
-	#connect to ensembl database
-	my $registry = 'Bio::EnsEMBL::Registry';
+	$self->{options}->{ensembl_build} = exists $args{ensembl_build} ?
+	$args{ensembl_build} : 0;
+	$self->{options}->{assembly} = exists $args{assembly} ?
+	$args{assembly} : 0;
 
-	$registry->load_registry_from_db(
-		-host =>  'localhost',
-		-user =>  'varcontext',
-		-pass =>  'generatetranscripts',
-		-verbose=>0,
-		-mysql_skip_secure_auth=>1
+	# connect to ensembl database
+	#my $registry = 'Bio::EnsEMBL::Registry';
+
+	#$registry->load_registry_from_db(
+	#	-host =>  'localhost',
+	#	-user =>  'varcontext',
+	#	-pass =>  'generatetranscripts',
+	#	-verbose=>0,
+	#	-mysql_skip_secure_auth=>1
+	#);
+
+	my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+	-host    => 'localhost',
+	-user    => 'varcontext',
+	-pass    => 'generatetranscripts',
+	-port    => '3306',
+	-species => 'homo_sapiens',
+	-dbname  => join('_', 'homo_sapiens_core', $self->{options}->{ensembl_build}, $self->{options}->{assembly}),
+	-group   => 'core',
 	);
 
-	my $sa = Bio::EnsEMBL::Registry->get_adaptor("human","core","slice");
-	my $ta = Bio::EnsEMBL::Registry->get_adaptor("human","core","transcript");
+	my $sa = $dba->get_adaptor("slice");
+	my $ta = $dba->get_adaptor("transcript");
 
 	$self->{sa} = $sa;
 	$self->{ta} = $ta;
 
 	return $self;
-} 
+}
 
 sub get_Transcripts_for_Variant {
 	my $self = shift;

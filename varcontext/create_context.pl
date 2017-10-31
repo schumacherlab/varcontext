@@ -19,6 +19,8 @@ use ensembl;
 # Command line defaults
 # Input file should be in TSV-format
 my $separator = "\t";
+my $ensembl_build = 90;
+my $assembly = 38;
 my $canonical = false;
 my $peptide_context = false;
 my $protein_context = true;
@@ -26,23 +28,27 @@ my $nmd = true;
 my $rna_context = false;
 my $cdnacontextsize = 54;
 my $trim_overlapping_bases = false;
-GetOptions ("separator=s" => \$separator, 
-            "canonical!" => \$canonical,
-            "peptide_context!" => \$peptide_context, 
-            "protein_context!" => \$protein_context, 
-            "nmd!" => \$nmd,
-            "rna_context!" => \$rna_context,
-            "cdnacontextsize=i" => \$cdnacontextsize, 
-            "trim_overlapping_bases" => \$trim_overlapping_bases); 
+
+GetOptions ("separator=s"            => \$separator,
+            "ensembl=s"              => \$ensembl_build,
+            "assembly=s"             => \$assembly,
+            "canonical!"             => \$canonical,
+            "peptide_context!"       => \$peptide_context,
+            "protein_context!"       => \$protein_context,
+            "nmd!"                   => \$nmd,
+            "rna_context!"           => \$rna_context,
+            "cdnacontextsize=i"      => \$cdnacontextsize,
+            "trim_overlapping_bases" => \$trim_overlapping_bases);
 
 # should set binary attribute
-my $csv = Text::CSV->new ( { binary => 1, sep_char => $separator } ) 
+my $csv = Text::CSV->new ( { binary   => 1,
+                             sep_char => $separator } )
   or die "Cannot use CSV: ".Text::CSV->error_diag ();
 my $file = shift;
 
 open my $fh, "<:encoding(utf8)", $file or die "$file: $!";
 my @cols = @{$csv->getline ($fh)};
-# Ensure column names are strictly in lowercase 
+# Ensure column names are strictly in lowercase
 @cols = map { lc } @cols;
 
 # Determine names of non-obligatory, extra columns
@@ -50,7 +56,7 @@ my @cols = @{$csv->getline ($fh)};
 my @obligatory_cols = ('variant_id', 'chromosome', 'position',
                        'start_position', 'ref_allele', 'alt_allele');
 my @extra_cols = (); my %count_cols = (); my $e;
-foreach $e (@cols, @obligatory_cols) { 
+foreach $e (@cols, @obligatory_cols) {
   ## Obligatory cols will get count of 2, optional cols 1
   $count_cols{$e}++;
 }
@@ -61,21 +67,23 @@ foreach $e (keys %count_cols) {
 }
 # @extra_cols = sort @extra_cols;
 # print join(", ", @extra_cols) . "\n";
- 
-my $vs = VariantSet->new(canonical_only => $canonical, 
-                         peptide_context => $peptide_context, 
-                         protein_context => $protein_context, 
-                         nmd_status => $nmd,
+
+my $vs = VariantSet->new(ensembl_build     => $ensembl_build,
+                         assembly          => $assembly,
+                         canonical_only    => $canonical,
+                         peptide_context   => $peptide_context,
+                         protein_context   => $protein_context,
+                         nmd_status        => $nmd,
                          extra_field_names => \@extra_cols,
-                         rna_context => $rna_context,
-                         cdnacontextsize => $cdnacontextsize); 
+                         rna_context       => $rna_context,
+                         cdnacontextsize   => $cdnacontextsize);
 
 
 $csv->column_names (@cols);
 while ( my $row = $csv->getline_hr( $fh ) ) {
   my $chromosome = $row->{'chromosome'};
   if (length($chromosome) == 0) {
-    warn "# Missing chromosome information for variant, skipping variant\n" . 
+    warn "# Missing chromosome information for variant, skipping variant\n" .
          join("\t", map($row->{$_}, @cols)) . "\n";
     next;
   }
@@ -86,7 +94,7 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
   } elsif (defined $row->{'start_position'}) {
     $position = $row->{'start_position'};
   } else {
-    warn "# Missing position information for variant, skipping variant\n" . 
+    warn "# Missing position information for variant, skipping variant\n" .
          join("\t", map($row->{$_}, @cols)) . "\n";
     next;
   }
@@ -103,15 +111,15 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
   # Constant ordering of extra fields is ensured using this array
   my @extra_fields = map $row->{$_} // '', @extra_cols;
   # print join(", ", @extra_fields ) . "\n";
-   
+
   # make new variant and add to variant set
-  my $v = Variant->new(variant_id=>$id, 
-                       chromosome=>$chromosome, 
-                       start_position=>$position, 
-                       ref_allele=>$ref, 
-                       alt_allele=>$alt,
-                       extra_fields=>@extra_fields,
-                       trim_overlapping_bases=>$trim_overlapping_bases);
+  my $v = Variant->new(variant_id              => $id,
+                       chromosome              => $chromosome,
+                       start_position          => $position,
+                       ref_allele              => $ref,
+                       alt_allele              => $alt,
+                       extra_fields            => @extra_fields,
+                       trim_overlapping_bases  => $trim_overlapping_bases);
   $vs->add($v);
 }
 
