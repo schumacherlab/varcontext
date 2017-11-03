@@ -25,8 +25,8 @@ my $canonical = false;
 my $peptide_context = false;
 my $protein_context = true;
 my $nmd = true;
-my $rna_context = false;
-my $cdnacontextsize = 54;
+my $cdna_context = false;
+my $cdna_contextsize = 54;
 my $trim_overlapping_bases = false;
 
 GetOptions ("separator=s"            => \$separator,
@@ -36,8 +36,8 @@ GetOptions ("separator=s"            => \$separator,
             "peptide_context!"       => \$peptide_context,
             "protein_context!"       => \$protein_context,
             "nmd!"                   => \$nmd,
-            "rna_context!"           => \$rna_context,
-            "cdnacontextsize=i"      => \$cdnacontextsize,
+            "cdna_context!"          => \$cdna_context,
+            "cdna_contextsize=i"     => \$cdna_contextsize,
             "trim_overlapping_bases" => \$trim_overlapping_bases);
 
 # should set binary attribute
@@ -75,8 +75,8 @@ my $vs = VariantSet->new(ensembl_build     => $ensembl_build,
                          protein_context   => $protein_context,
                          nmd_status        => $nmd,
                          extra_field_names => \@extra_cols,
-                         rna_context       => $rna_context,
-                         cdnacontextsize   => $cdnacontextsize);
+                         cdna_context      => $cdna_context,
+                         cdna_contextsize   => $cdna_contextsize);
 
 
 $csv->column_names (@cols);

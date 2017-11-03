@@ -44,11 +44,11 @@ sub new {
 	$args{protein_context} : 0;
 	$self->{options}->{nmd_status} = exists $args{nmd_status} ?
 	$args{nmd_status} : 0;
-	$self->{options}->{rna_context} = exists $args{rna_context} ?
-	$args{rna_context} : 0;
-	$self->{options}->{cdnacontextsize} = exists $args{cdnacontextsize} ?
-	$args{cdnacontextsize} : 54;
-	$self->{options}->{pepcontextsize} = $args{cdnacontextsize} / 3 + 1;
+	$self->{options}->{cdna_context} = exists $args{cdna_context} ?
+	$args{cdna_context} : 0;
+	$self->{options}->{cdna_contextsize} = exists $args{cdna_contextsize} ?
+	$args{cdna_contextsize} : 54;
+	$self->{options}->{pepcontextsize} = $args{cdna_contextsize} / 3 + 1;
 
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new(ensembl_build => $self->{options}->{ensembl_build},
@@ -166,9 +166,9 @@ sub print_variant_context {
 	push @columns, qw/codon_ref codon_germline codon_tumor aa_ref aa_germline
 					aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start
 					aa_pos_tumor_stop/;
+	push @columns, qw/cdna_context_ref cdna_context_germline cdna_context_tumor/ if $self->{options}->{cdna_context};
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
-	push @columns, qw/rna_context_ref rna_context_germline rna_context_tumor/ if $self->{options}->{rna_context};
 	print join("\t", @columns);
 	print join("\t", @{$self->{extra_field_names}}) . "\n";
 
@@ -231,10 +231,10 @@ sub print_variant_context {
 				}
 
 				# context sequences rna
-				$result{rna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $self->{options}->{cdnacontextsize});
-				$result{rna_context_germline} = defined $germline_rna_start ?
-					$es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdnacontextsize}) : "-";
-				$result{rna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdnacontextsize});
+				$result{cdna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $self->{options}->{cdna_contextsize});
+				$result{cdna_context_germline} = defined $germline_rna_start ?
+					$es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdna_contextsize}) : "-";
+				$result{cdna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdna_contextsize});
 
 				# context sequences peptide
 				$result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $self->{options}->{pepcontextsize});

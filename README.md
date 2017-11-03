@@ -50,12 +50,12 @@ from a shell by:
 - `--ensembl=VALUE` - ensembl gene build to use (default = 90)
 - `--assembly=VALUE` - GRCh genome build to use (default = 38)
 - `--canonical` - only fetch and apply edits to canonical transcripts (default: FALSE)
-- `--peptide_context` - report peptide context (default: TRUE)
+- `--peptide_context` - report peptide context (default: FALSE)
 - `--nopeptide_context` - to omit peptide context
-- `--protein_context` - report entire protein sequences (default: FALSE)
-- `--rna_context` - report RNA sequences (default: FALSE)
-- `--cdnacontextsize=VALUE` - define amount of basepairs to flank each variant by (default: 54)
-- `--nmd` - infer nonsense-mediated decay status (default = FALSE)
+- `--protein_context` - report entire protein sequences (default: TRUE)
+- `--cdna_context` - report RNA sequences (default: FALSE)
+- `--cdna_contextsize=VALUE` - define amount of basepairs to flank each variant by (default: 54)
+- `--nmd` - infer nonsense-mediated decay status (default = TRUE)
 
 
 ### Package definitions
