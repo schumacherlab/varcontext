@@ -48,7 +48,7 @@ sub new {
 	$args{cdna_context} : 0;
 	$self->{options}->{cdna_contextsize} = exists $args{cdna_contextsize} ?
 	$args{cdna_contextsize} : 54;
-	$self->{options}->{pepcontextsize} = $args{cdna_contextsize} / 3 + 1;
+	$self->{options}->{pepcontextsize} = ceil($args{cdna_contextsize} / 3);
 
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new(ensembl_build => $self->{options}->{ensembl_build},
