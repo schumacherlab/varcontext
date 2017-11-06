@@ -195,7 +195,7 @@ sub get_rna_context_ref {
 
 	my $start = $pos - $size - 1;
 	$start = 0 if $start < 0;
-	return substr($self->{rna}, $start, $size*2);
+	return substr($self->{rna}, $start, $size * 2);
 }
 
 sub get_rna_context_edit {
@@ -210,7 +210,7 @@ sub get_rna_context_edit {
 
 	my $start = $pos - $size - 1;
 	$start = 0 if $start < 0;
-	return substr($self->{edited_rna}, $start, $size*2);
+	return substr($self->{edited_rna}, $start, $size * 2);
 }
 
 sub get_protein_context_ref {
@@ -225,7 +225,7 @@ sub get_protein_context_ref {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	return substr($self->{ref_protein}, $start, $size*2);
+	return substr($self->{ref_protein}, $start, $size * 2 + 1);
 }
 
 sub get_protein_context_edit {
@@ -242,7 +242,7 @@ sub get_protein_context_edit {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	return substr($self->{edited_protein}, $start, $size*2);
+	return substr($self->{edited_protein}, $start, $size * 2 + 1);
 }
 
 sub nmd_status {
