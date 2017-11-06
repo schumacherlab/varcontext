@@ -38,7 +38,7 @@ GetOptions ("separator=s"            => \$separator,
             "nmd!"                   => \$nmd,
             "cdna_context!"          => \$cdna_context,
             "cdna_contextsize=i"     => \$cdna_contextsize,
-            "trim_overlapping_bases" => \$trim_overlapping_bases);
+            "trim_bases"             => \$trim_overlapping_bases);
 
 # should set binary attribute
 my $csv = Text::CSV->new ( { binary   => 1,
