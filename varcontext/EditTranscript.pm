@@ -223,7 +223,7 @@ sub get_protein_context_ref {
 
 	croak "Edits not yet applied" unless $self->{applied_edits};
 
-	my $start = $pos - $size - 1;
+	my $start = $pos - $size;
 	$start = 0 if $start < 0;
 	return substr($self->{ref_protein}, $start, $size*2);
 }
@@ -240,7 +240,7 @@ sub get_protein_context_edit {
 	croak "Position out of range" unless $pos >= 0;
 	return "-" unless $pos < length($self->{edited_protein});
 
-	my $start = $pos - $size - 1;
+	my $start = $pos - $size;
 	$start = 0 if $start < 0;
 	return substr($self->{edited_protein}, $start, $size*2);
 }
