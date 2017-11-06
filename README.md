@@ -41,21 +41,24 @@ from a shell by:
 `export ENSEMBLAPI=/path/to/ensembl_api/;perl /path/to/varcontext/create_context.pl --ARGUMENTS INPUT_FILE 1> OUTPUT_FILE 2> LOG_FILE`
 
 **NOTE: environment variable `ENSEMBLAPI` must be set to full ensembl API path and include trailing slash ('/')**   
-**In addition, the ensembl API version should match the ensembl gene build you're querying**
+**In addition, the ensembl API version should match the ensembl gene build in the MySQL database you're querying**
 
 
 ### Optional arguments  
 
-- `--separator=VALUE` - field separator for input file (default = "\t")
-- `--ensembl=VALUE` - ensembl gene build to use (default = 90)
-- `--assembly=VALUE` - GRCh genome build to use (default = 38)
-- `--canonical` - only fetch and apply edits to canonical transcripts (default: FALSE)
-- `--peptide_context` - report peptide context (default: FALSE)
-- `--nopeptide_context` - to omit peptide context
-- `--protein_context` - report entire protein sequences (default: TRUE)
-- `--cdna_context` - report RNA sequences (default: FALSE)
-- `--cdna_contextsize=VALUE` - define amount of basepairs to flank each variant by (default: 54)
-- `--nmd` - infer nonsense-mediated decay status (default = TRUE)
+- `--separator=VALUE` - field separator for input file (default = **"\t"**)
+- `--ensembl=VALUE` - ensembl gene build to use (default = **90**)
+- `--assembly=VALUE` - GRCh genome build to use (default = **38**)
+- `--canonical` - only fetch and apply edits to canonical transcripts (default: **FALSE**)
+- `--cdna_context` - report cDNA sequences (default: **FALSE**)
+- `--nocdna_context` - omit cDNA sequences
+- `--cdna_contextsize=VALUE` - define amount of basepairs to flank each variant by (default: **54**)
+- `--peptide_context` - report peptide context (default: **FALSE**)
+- `--nopeptide_context` - omit peptide context
+- `--protein_context` - report entire protein sequences (default: **TRUE**)
+- `--noprotein_context` - omit protein sequence
+- `--nmd` - infer nonsense-mediated decay status (default = **TRUE**)
+- `--trim_bases` - trim overlapping basepairs in REF & ALT fields (default = **FALSE**)
 
 
 ### Package definitions
