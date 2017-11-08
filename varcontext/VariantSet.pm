@@ -27,7 +27,7 @@ sub new {
 	# Test length of extra_field_names
 	# $self->{extra_field_names} = scalar(@{$args{extra_field_names}}) > 0 ?
 	#                                     @{$args{extra_field_names}} : ();
-	$self->{extra_field_names} = [ @{$args{extra_field_names}} ];
+	$self->{extra_field_names} = [ sort @{$args{extra_field_names}} ];
 	# print scalar(@{$self->{extra_field_names}}) . "\n";
 	# print 'Extra field names: ' .
 	#   join(", ", @{$self->{extra_field_names}} ) . "\n";
@@ -169,8 +169,8 @@ sub print_variant_context {
 	push @columns, qw/cdna_context_ref cdna_context_germline cdna_context_tumor/ if $self->{options}->{cdna_context};
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
-	print join("\t", @columns);
-	print join("\t", @{$self->{extra_field_names}}) . "\n";
+	push @columns, @{$self->{extra_field_names}} if scalar(@{$self->{extra_field_names}}) > 0;
+	print join("\t", @columns) . "\n";
 
 	foreach my $v (@{$self->{variants}}) {
 		# check if variant is SNP, if so, don't print a context
