@@ -49,8 +49,8 @@ sub new {
 	$self->{options}->{cdna_contextsize} = exists $args{cdna_contextsize} ?
 										$args{cdna_contextsize} : 54;
 	$self->{options}->{pepcontextsize} = ceil($args{cdna_contextsize} / 3);
-	$self->{options}->{print_overlapping_bases} = exists $args{print_overlapping_bases} ?
-												$args{print_overlapping_bases} : 0;
+	$self->{options}->{print_overlap} = exists $args{print_overlap} ?
+									$args{print_overlap} : 0;
 
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new(ensembl_build => $self->{options}->{ensembl_build},
@@ -274,8 +274,8 @@ sub print_variant_context {
 			# get NMD status & remark
 			( $result{nmd_status}, $result{nmd_remark} ) = $es_tumor->nmd_status;
 
-			# should we print_overlapping_bases or trimmed bases?
-			if ($self->{print_overlapping_bases}) {
+			# should we print overlapping bases or trimmed bases?
+			if ($self->{print_overlap}) {
 				$result{start_position} = $v->{start_position_input};
 				$result{ref_allele} = $v->{ref_allele_input};
 				$result{alt_allele} = $v->{alt_allele_input};

@@ -27,7 +27,7 @@ my $protein_context = true;
 my $nmd = true;
 my $cdna_context = false;
 my $cdna_contextsize = 54;
-my $print_overlapping_bases = true;
+my $print_overlap = true;
 
 GetOptions ("separator=s"            => \$separator,
             "ensembl=s"              => \$ensembl_build,
@@ -38,7 +38,7 @@ GetOptions ("separator=s"            => \$separator,
             "nmd!"                   => \$nmd,
             "cdna_context!"          => \$cdna_context,
             "cdna_contextsize=i"     => \$cdna_contextsize,
-            "print_overlap!"          => \$print_overlapping_bases);
+            "print_overlap!"          => \$print_overlap);
 
 # should set binary attribute
 my $csv = Text::CSV->new ( { binary   => 1,
@@ -77,7 +77,7 @@ my $vs = VariantSet->new(ensembl_build     => $ensembl_build,
                          extra_field_names => \@extra_cols,
                          cdna_context      => $cdna_context,
                          cdna_contextsize  => $cdna_contextsize,
-                         print_overlapping_bases => $print_overlapping_bases);
+                         print_overlap     => $print_overlap);
 
 
 $csv->column_names (@cols);
