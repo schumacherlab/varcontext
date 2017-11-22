@@ -33,22 +33,24 @@ sub new {
 	#   join(", ", @{$self->{extra_field_names}} ) . "\n";
 
 	$self->{options}->{ensembl_build} = exists $args{ensembl_build} ?
-	$args{ensembl_build} : 0;
+									$args{ensembl_build} : 0;
 	$self->{options}->{assembly} = exists $args{assembly} ?
-	$args{assembly} : 0;
+								$args{assembly} : 0;
 	$self->{options}->{canonical_only} = exists $args{canonical_only} ?
-	$args{canonical_only} : 0;
+									$args{canonical_only} : 0;
 	$self->{options}->{peptide_context} = exists $args{peptide_context} ?
-	$args{peptide_context} : 0;
+									$args{peptide_context} : 0;
 	$self->{options}->{protein_context} = exists $args{protein_context} ?
-	$args{protein_context} : 0;
+										$args{protein_context} : 0;
 	$self->{options}->{nmd_status} = exists $args{nmd_status} ?
-	$args{nmd_status} : 0;
+									$args{nmd_status} : 0;
 	$self->{options}->{cdna_context} = exists $args{cdna_context} ?
-	$args{cdna_context} : 0;
+									$args{cdna_context} : 0;
 	$self->{options}->{cdna_contextsize} = exists $args{cdna_contextsize} ?
-	$args{cdna_contextsize} : 54;
+										$args{cdna_contextsize} : 54;
 	$self->{options}->{pepcontextsize} = ceil($args{cdna_contextsize} / 3);
+	$self->{options}->{print_overlapping_bases} = exists $args{print_overlapping_bases} ?
+												$args{print_overlapping_bases} : 0;
 
 	# prepare an ensembl connection wrapper
 	$self->{ens} = ensembl->new(ensembl_build => $self->{options}->{ensembl_build},
@@ -272,10 +274,13 @@ sub print_variant_context {
 			# get NMD status & remark
 			( $result{nmd_status}, $result{nmd_remark} ) = $es_tumor->nmd_status;
 
-			# print join("\t", @columns ), "\n";
-			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
+			# should we print_overlapping_bases or trimmed bases?
+			if ($self->{print_overlapping_bases}) {
+				$result{start_position} = $v->{start_position_input};
+				$result{ref_allele} = $v->{ref_allele_input};
+				$result{alt_allele} = $v->{alt_allele_input};
+			}
 
-			# print join("\t", map $v->{$_}, @{$self->{extra_field_names}} ), "\n";
 			# Print the results to STDOUT
 			print join("\t", map {$result{$_} // ""} @columns);
 			print join("\t", @{$v->{extra_fields}}) . "\n";
