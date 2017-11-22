@@ -58,17 +58,17 @@ sub apply_variant {
 		when("insertion") {
 			$self->{rna_editor}->edit_insert($alt, $start);
 			$v->{effect} = (length($v->{alt_allele}) % 3) == 0 ? "inframe" : "frameshift";
-			$v->{variant_classification} = (length($v->{alt_allele}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{variant_classification} = $v->{type} . "_" . $v->{effect};
 		}
 		when("deletion") {
 			$self->{rna_editor}->edit_delete($ref, $start);
 			$v->{effect} = (length($v->{ref_allele}) % 3) == 0 ? "inframe" : "frameshift";
-			$v->{variant_classification} = (length($v->{ref_allele}) % 3) == 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{variant_classification} = $v->{type} . "_" . $v->{effect};
 		}
 		when("complex") {
 			$self->{rna_editor}->edit_complex($alt, $start, $ref);
-			$v->{effect} = abs(length($v->{ref_allele}) - length($v->{alt_allele})) % 3 != 0 ? "inframe" : "frameshift";
-			$v->{variant_classification} = abs(length($v->{ref_allele}) - length($v->{alt_allele})) % 3 != 0 ? $v->{type} . "_" . "inframe" : $v->{type} . "_" . "frameshift";
+			$v->{effect} = abs(length($v->{ref_allele}) - length($v->{alt_allele})) % 3 == 0 ? "inframe" : "frameshift";
+			$v->{variant_classification} = $v->{type} . "_" . $v->{effect};
 		}
 	}
 
