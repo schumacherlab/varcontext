@@ -58,7 +58,7 @@ from a shell by:
 - `--protein_context` - report entire protein sequences (default: **TRUE**)
 - `--noprotein_context` - omit protein sequence
 - `--nmd` - infer nonsense-mediated decay status (default = **TRUE**)
-- `--trim_bases` - trim overlapping basepairs in REF & ALT fields (default = **FALSE**)
+- `--noprint_overlap` - report left-trimmed basepairs in REF & ALT fields & adjusted POS
 
 
 ### Package definitions
