@@ -27,7 +27,7 @@ my $protein_context = true;
 my $nmd = true;
 my $cdna_context = false;
 my $cdna_contextsize = 54;
-my $trim_overlapping_bases = false;
+my $print_overlapping_bases = true;
 
 GetOptions ("separator=s"            => \$separator,
             "ensembl=s"              => \$ensembl_build,
@@ -38,7 +38,7 @@ GetOptions ("separator=s"            => \$separator,
             "nmd!"                   => \$nmd,
             "cdna_context!"          => \$cdna_context,
             "cdna_contextsize=i"     => \$cdna_contextsize,
-            "trim_bases"             => \$trim_overlapping_bases);
+            "print_overlap!"          => \$print_overlapping_bases);
 
 # should set binary attribute
 my $csv = Text::CSV->new ( { binary   => 1,
@@ -76,7 +76,8 @@ my $vs = VariantSet->new(ensembl_build     => $ensembl_build,
                          nmd_status        => $nmd,
                          extra_field_names => \@extra_cols,
                          cdna_context      => $cdna_context,
-                         cdna_contextsize   => $cdna_contextsize);
+                         cdna_contextsize  => $cdna_contextsize,
+                         print_overlapping_bases => $print_overlapping_bases);
 
 
 $csv->column_names (@cols);
@@ -118,8 +119,7 @@ while ( my $row = $csv->getline_hr( $fh ) ) {
                        start_position          => $position,
                        ref_allele              => $ref,
                        alt_allele              => $alt,
-                       extra_fields            => @extra_fields,
-                       trim_overlapping_bases  => $trim_overlapping_bases);
+                       extra_fields            => @extra_fields);
   $vs->add($v);
 }
 
