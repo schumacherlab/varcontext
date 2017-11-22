@@ -35,30 +35,30 @@ sub new {
     $self->{extra_fields} = [ ];
   }
   # print 'extra fields: ' . join(", ", @{$self->{extra_fields}} ) . "\n";
-   
-  ## Slice last field for trim_overlapping_bases
-  my $trim_overlapping_bases = $_[ $#_ ];
-  # print 'trim_overlapping_bases:' . $trim_overlapping_bases . "\n";
 
-  ## N.B. This setting potentially influences variant type inference
-  if ($trim_overlapping_bases) {
-    ## Trim left identical bases for ref alt combo
-    my $minlength = length($self->{ref_allele}) < length($self->{alt_allele}) ? 
-      length($self->{ref_allele}) : length($self->{alt_allele});
-    ## Determine position of first mismatch between ref and alt alleles
-    my $pos = 0;
-    while($minlength > 0 && $pos < $minlength) {
-      last if substr($self->{ref_allele}, $pos, 1) ne 
-      substr($self->{alt_allele}, $pos, 1);
-      $pos++;
-    }
-    if ($pos > 0) {
-      $self->{ref_allele} = substr $self->{ref_allele}, $pos;
-      $self->{alt_allele} = substr $self->{alt_allele}, $pos;
-      $self->{start_position} += $pos;
-    }
+  ## Store input data before trimming
+  $self->{start_position_input} = $self->{start_position};
+  $self->{ref_allele_input} = $self->{ref_allele};
+  $self->{alt_allele_input} = $self->{alt_allele};
+
+  ## Trim left identical bases for ref alt combo
+  my $minlength = length($self->{ref_allele}) < length($self->{alt_allele}) ? 
+    length($self->{ref_allele}) : length($self->{alt_allele});
+
+  ## Determine position of first mismatch between ref and alt alleles
+  my $pos = 0;
+  while ($minlength > 0 && $pos < $minlength) {
+    last if substr($self->{ref_allele}, $pos, 1) ne 
+    substr($self->{alt_allele}, $pos, 1);
+    $pos++;
+  }
+  if ($pos > 0) {
+    $self->{ref_allele} = substr $self->{ref_allele}, $pos;
+    $self->{alt_allele} = substr $self->{alt_allele}, $pos;
+    $self->{start_position} += $pos;
   }
   
+  ## if ref == alt, discard
   if ($self->{ref_allele} eq $self->{alt_allele}) {
     croak $self->{variant_id} . 
     " # Not a variant (ref_allele/alt_allele identical): '" . 
