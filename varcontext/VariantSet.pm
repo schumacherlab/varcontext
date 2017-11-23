@@ -252,10 +252,19 @@ sub print_variant_context {
 				# tumor peptides
 				# if this variant induced a frame shift or mutated the stop codon clip until the end
 				if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
-					my $p = $tumor_pep_start - $self->{options}->{pepcontextsize} - 1;
-					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($p < 0 ? 0 : $p) - $self->{options}->{pepcontextsize}-1);
 					$result{aa_pos_tumor_start} = $tumor_pep_start;
 					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
+
+					# where should peptide seq start?
+					my $pepseq_start = $tumor_pep_start - $self->{options}->{pepcontextsize} - 1;
+					# take substring from pepseq_start until end
+					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
+
+					# if resulting peptide seq is too short, extend
+					while (length($result{peptide_context_tumor}) < (2 * $self->{options}->{pepcontextsize} + 1) && $pepseq_start > 0) {
+						$pepseq_start--;
+						$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));						
+					}
 				} elsif ($v->{variant_classification} eq "insertion_inframe") {
 					$result{aa_pos_tumor_start} = $tumor_pep_start + 1;
 					$result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
