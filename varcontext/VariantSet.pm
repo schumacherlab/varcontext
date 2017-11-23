@@ -166,8 +166,7 @@ sub print_variant_context {
 		transcript_extension/;
 	push @columns, qw/nmd_status nmd_remark/ if $self->{options}->{nmd_status};
 	push @columns, qw/codon_ref codon_germline codon_tumor aa_ref aa_germline
-					aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start
-					aa_pos_tumor_stop/;
+					aa_tumor aa_pos_ref aa_pos_germline aa_pos_tumor_start aa_pos_tumor_stop/;
 	push @columns, qw/cdna_context_ref cdna_context_germline cdna_context_tumor/ if $self->{options}->{cdna_context};
 	push @columns, qw/peptide_context_ref peptide_context_germline peptide_context_tumor/ if $self->{options}->{peptide_context};
 	push @columns, qw/protein_seq_ref protein_seq_germline protein_seq_tumor/ if $self->{options}->{protein_context};
@@ -256,9 +255,9 @@ sub print_variant_context {
 					$result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 
 					# where should peptide seq start?
-					my $pepseq_start = $tumor_pep_start - $self->{options}->{pepcontextsize} - 1;
+					my $pepseq_start = $tumor_pep_start - $self->{options}->{pepcontextsize} - 2; # -2 to correct for: 1-base $tumor_pep_start and trimming of stop codon
 					# take substring from pepseq_start until end
-					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
+					$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start), -1);
 
 					# if resulting peptide seq is too short, extend
 					while (length($result{peptide_context_tumor}) < (2 * $self->{options}->{pepcontextsize} + 1) && $pepseq_start > 0) {
