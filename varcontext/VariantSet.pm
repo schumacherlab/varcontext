@@ -262,7 +262,7 @@ sub print_variant_context {
 					# if resulting peptide seq is too short, extend
 					while (length($result{peptide_context_tumor}) < (2 * $self->{options}->{pepcontextsize} + 1) && $pepseq_start > 0) {
 						$pepseq_start--;
-						$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));						
+						$result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start), -1);
 					}
 				} elsif ($v->{variant_classification} eq "insertion_inframe") {
 					$result{aa_pos_tumor_start} = $tumor_pep_start + 1;
