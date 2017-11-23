@@ -93,7 +93,8 @@ sub apply_edits {
 	if ($self->{rna} =~ m/$stop/ && !($edited_rna =~  m/$stop/ && length($edited_rna) % 3 == 0)) {
 		#append genomic data until a stop is found in-frame
 		my $elongated_edited_rna = $self->_get_genomic_elongation($edited_rna);
-		$self->{transcript_extension} = length($elongated_edited_rna) - length($edited_rna);
+		$self->{transcript_extension} = (length($elongated_edited_rna) - length($edited_rna) > 0) ? length($elongated_edited_rna) - length($edited_rna) : 0;
+
 		# if stop lost is combined with an earlier stop gained it is possible that the 
 		# extension value becomes < 0
 		$edited_rna = $elongated_edited_rna;
