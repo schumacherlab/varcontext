@@ -275,7 +275,7 @@ sub print_variant_context {
 			( $result{nmd_status}, $result{nmd_remark} ) = $es_tumor->nmd_status;
 
 			# should we print overlapping bases or trimmed bases?
-			if ($self->{print_overlap}) {
+			if ($self->{options}->{print_overlap}) {
 				$result{start_position} = $v->{start_position_input};
 				$result{ref_allele} = $v->{ref_allele_input};
 				$result{alt_allele} = $v->{alt_allele_input};
