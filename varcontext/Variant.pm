@@ -8,9 +8,9 @@ use 5.012;
 
 use Carp;
 use Data::Dumper;
- 
+
 sub new {
-  my $class = shift;  
+  my $class = shift;
   my $self = {};
   bless $self, $class;
 
@@ -25,8 +25,8 @@ sub new {
   $self->{$_} = $setters{$_} foreach qw/variant_id chromosome start_position
     ref_allele alt_allele/;
 
-  ## Slice field 11 til 2nd from last for extra fields
-  my @extra_fields = @_[ 11..($#_-2) ];
+  ## All remaining entries are extra fields, not required for varcontext
+  my @extra_fields = @_[ 11.. $#_ ];
   # print 'extra fields: ' . join(", ", @extra_fields) . "\n";
   if ($#extra_fields > 0) {
     ## Deep copy @extra_fields for security purposes
@@ -42,13 +42,13 @@ sub new {
   $self->{alt_allele_input} = $self->{alt_allele};
 
   ## Trim left identical bases for ref alt combo
-  my $minlength = length($self->{ref_allele}) < length($self->{alt_allele}) ? 
+  my $minlength = length($self->{ref_allele}) < length($self->{alt_allele}) ?
     length($self->{ref_allele}) : length($self->{alt_allele});
 
   ## Determine position of first mismatch between ref and alt alleles
   my $pos = 0;
   while ($minlength > 0 && $pos < $minlength) {
-    last if substr($self->{ref_allele}, $pos, 1) ne 
+    last if substr($self->{ref_allele}, $pos, 1) ne
     substr($self->{alt_allele}, $pos, 1);
     $pos++;
   }
@@ -57,21 +57,21 @@ sub new {
     $self->{alt_allele} = substr $self->{alt_allele}, $pos;
     $self->{start_position} += $pos;
   }
-  
+
   ## if ref == alt, discard
   if ($self->{ref_allele} eq $self->{alt_allele}) {
-    croak $self->{variant_id} . 
-    " # Not a variant (ref_allele/alt_allele identical): '" . 
+    croak $self->{variant_id} .
+    " # Not a variant (ref_allele/alt_allele identical): '" .
     $self->to_string . "'";
   }
 
   ## Infer type
   if (length($self->{ref_allele}) == length($self->{alt_allele})) {
     $self->{type} = "substitution";
-  } elsif (length($self->{ref_allele}) == 0 && 
+  } elsif (length($self->{ref_allele}) == 0 &&
            length($self->{alt_allele}) > 0) {
     $self->{type} = "insertion";
-  } elsif (length($self->{ref_allele}) > 0 && 
+  } elsif (length($self->{ref_allele}) > 0 &&
            length($self->{alt_allele}) == 0) {
     $self->{type} = "deletion";
   } else {
@@ -79,13 +79,13 @@ sub new {
   }
 
   ## Calc end
-  $self->{end_position} = $self->{start_position} + 
+  $self->{end_position} = $self->{start_position} +
     length($self->{ref_allele}) - 1 ;
 
   ## Prepare target maps
   $self->{affected_transcriptids} = {};
   $self->{transcript_map} = {};
-  
+
   return $self;
 }
 
@@ -117,7 +117,7 @@ sub map_to_Transcript {
 
   my $trmapper = $tr->get_TranscriptMapper;
   my @coords = $trmapper->genomic2cds( $self->{start_position}, $self->{end_position}, $tr->strand);
-  
+
   #let do some tests and die on exceptions
   if(scalar @coords != 1) {
     # print STDERR Dumper(\@coords);
@@ -179,7 +179,7 @@ sub map_to_transcriptid {
   my $self = shift;
   my $tid = shift;
 
-  if(exists $self->{transcript_map}->{$tid} && 
+  if(exists $self->{transcript_map}->{$tid} &&
     exists $self->{transcript_map}->{$tid}->{start_position}) {
     return ($self->{transcript_map}->{$tid}->{start_position},
             $self->{transcript_map}->{$tid}->{end_position});
@@ -240,9 +240,7 @@ sub apply_to_Transcript {
       $self->{variant_classification} = abs(length($self->{ref_allele}) - length($self->{alt_allele})) % 3 != 0 ? $self->{type} . "_" . "inframe" : $self->{type} . "_" . "frameshift"
     }
   }
-
   return 1;
-  
 }
 
 sub to_string {
