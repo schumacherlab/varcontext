@@ -226,7 +226,16 @@ sub get_protein_context_ref {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	return substr($self->{ref_protein}, $start, $size * 2 + 1);
+	
+	my $pepseq = substr($self->{ref_protein}, $start, $size * 2 + 1);
+
+	if (length($pepseq) < (2 * $size + 1) && substr($pepseq, -1) eq "*") {
+		while (length($pepseq) < (2 * $size + 1) && $start > 0) {
+			$start--;
+			$pepseq = substr($self->{ref_protein}, ($start < 0 ? 0 : $start), -1);
+		}
+	}
+	return($pepseq);
 }
 
 sub get_protein_context_edit {
@@ -243,7 +252,16 @@ sub get_protein_context_edit {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	return substr($self->{edited_protein}, $start, $size * 2 + 1);
+	
+	my $pepseq = substr($self->{edited_protein}, $start, $size * 2 + 1);
+
+	if (length($pepseq) < (2 * $size + 1) && substr($pepseq, -1) eq "*") {
+		while (length($pepseq) < (2 * $size + 1) && $start > 0) {
+			$start--;
+			$pepseq = substr($self->{edited_protein}, ($start < 0 ? 0 : $start), -1);
+		}
+	}
+	return($pepseq);
 }
 
 sub nmd_status {
