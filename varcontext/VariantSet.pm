@@ -244,18 +244,18 @@ sub print_variant_context {
           $es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdna_contextsize}) : "-";
         $result{cdna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdna_contextsize});
 
-        # context sequences peptide
-        $result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $self->{options}->{pepcontextsize});
-        $result{peptide_context_germline} =defined $germline_rna_start ?
-          $es_germline->get_protein_context_edit($germline_pep_start, $self->{options}->{pepcontextsize}) : "-";
-        $result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $self->{options}->{pepcontextsize});
-
+        # aa positions of variants
         $result{aa_pos_ref} = $ref_pep_start;
         $result{aa_pos_germline} = $germline_pep_start || "-";
         $result{aa_pos_tumor_start} = $tumor_pep_start;
         $result{aa_pos_tumor_stop} = $tumor_pep_start;
 
         # tumor peptides
+        $result{peptide_context_ref} = $es_germline->get_protein_context_ref($ref_pep_start, $self->{options}->{pepcontextsize});
+        $result{peptide_context_germline} = defined $germline_rna_start ?
+          $es_germline->get_protein_context_edit($germline_pep_start, $self->{options}->{pepcontextsize}) : "-";
+        $result{peptide_context_tumor} = $es_tumor->get_protein_context_edit($tumor_pep_start, $self->{options}->{pepcontextsize});
+
         # if this variant induced a frame shift or mutated the stop codon clip until the end
         if ($v->{variant_classification} eq "stop_lost" || $v->{variant_classification} eq "stop_gained" || $v->{effect} eq "frameshift") {
           $result{aa_pos_tumor_start} = $tumor_pep_start;
