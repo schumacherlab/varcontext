@@ -47,12 +47,12 @@ from a shell by:
 ### Optional arguments  
 
 - `--separator=VALUE` - field separator for input file (default = **"\t"**)
-- `--ensembl=VALUE` - ensembl gene build to use (default = **90**)
+- `--ensembl=VALUE` - ensembl gene build to use (default = **89**)
 - `--assembly=VALUE` - GRCh genome build to use (default = **38**)
 - `--canonical` - only fetch and apply edits to canonical transcripts (default: **FALSE**)
 - `--cdna_context` - report cDNA sequences (default: **FALSE**)
 - `--nocdna_context` - omit cDNA sequences
-- `--cdna_contextsize=VALUE` - define amount of basepairs to flank each variant by (default: **54**)
+- `--cdna_contextsize=VALUE` - define amount of basepairs to flank each variant by (default: **45**)
 - `--peptide_context` - report peptide context (default: **FALSE**)
 - `--nopeptide_context` - omit peptide context
 - `--protein_context` - report entire protein sequences (default: **TRUE**)

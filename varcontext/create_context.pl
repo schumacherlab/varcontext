@@ -19,14 +19,14 @@ use ensembl;
 # Command line defaults
 # Input file should be in TSV-format
 my $separator = "\t";
-my $ensembl_build = 90;
+my $ensembl_build = 89;
 my $assembly = 38;
 my $canonical = false;
 my $peptide_context = false;
 my $protein_context = true;
 my $nmd = true;
 my $cdna_context = false;
-my $cdna_contextsize = 54;
+my $cdna_contextsize = 45;
 my $print_overlap = true;
 
 GetOptions ("separator=s"            => \$separator,
