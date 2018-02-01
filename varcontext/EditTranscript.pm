@@ -210,6 +210,8 @@ sub get_rna_context_edit {
 	croak "Edits not yet applied" unless $self->{applied_edits};
 
 	my $start = $pos - $size - 1;
+  # make start fall on first position of codon
+  $start = $start - ($start % 3);
 	$start = 0 if $start < 0;
 	return substr($self->{edited_rna}, $start, $size * 2);
 }

@@ -115,7 +115,7 @@ sub apply_variants {
     # the ensembl object
     my $et = $self->{transcripts}->{$tid};
 
-    #create an editable transcript
+    # create an editable transcript
     my $germline_transcript = EditTranscript->new($et);
     my $tumor_transcript = EditTranscript->new($et);
 
@@ -199,11 +199,11 @@ sub print_variant_context {
 
       $result{transcript_remark} = $result{protein_seq_germline} eq $result{protein_seq_tumor} ? "identical" : "somatic_change";
 
-      #ref rna start and end are 1-based
+      # ref rna start and end are 1-based
       my ($ref_rna_start, $ref_rna_end) = $v->map_to_transcriptid($tid);
       my $germline_rna_start = $es_germline->convert_position_to_edit($ref_rna_start);
       my $tumor_rna_start = $es_tumor->convert_position_to_edit($ref_rna_start);
-
+      
       if (defined $tumor_rna_start) {
         #it is still possible $germline_rna_start is undefined
 
@@ -212,7 +212,7 @@ sub print_variant_context {
         my $germline_pep_start = ceil($germline_rna_start/ 3) if defined $germline_rna_start;
         my $tumor_pep_start = ceil($tumor_rna_start / 3);
 
-        if( $v->{type} eq "substitution") {
+        if ($v->{type} eq "substitution") {
           $result{codon_ref} = $es_germline->get_codon_ref($ref_rna_start);
           $result{codon_germline} = defined $germline_rna_start ? $es_germline->get_codon_edit($germline_rna_start) : "-";
           $result{codon_tumor} = $es_tumor->get_codon_edit($tumor_rna_start);
@@ -238,10 +238,11 @@ sub print_variant_context {
           }
         }
 
-        # context sequences rna
+        # context sequences cdna
         $result{cdna_context_ref} = $es_germline->get_rna_context_ref($ref_rna_start, $self->{options}->{cdna_contextsize});
         $result{cdna_context_germline} = defined $germline_rna_start ?
           $es_germline->get_rna_context_edit($germline_rna_start, $self->{options}->{cdna_contextsize}) : "-";
+        # slice from start of codon
         $result{cdna_context_tumor} = $es_tumor->get_rna_context_edit($tumor_rna_start, $self->{options}->{cdna_contextsize});
 
         # aa positions of variants
@@ -264,13 +265,31 @@ sub print_variant_context {
           # where should peptide seq start?
           my $pepseq_start = $tumor_pep_start - $self->{options}->{pepcontextsize} - 2; # -2 to correct for: 1-base $tumor_pep_start and trimming of stop codon
           # take substring from pepseq_start until end
-          $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start), -1);
+          $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
 
-          # if resulting peptide seq is too short, extend
+          # where should cdna seq start
+          # 0, 1 or 2, position of variant in codon (0-based)
+          my $variant_codon_pos = ($tumor_rna_start - 1) % 3;
+          my $cdna_slice_start = ($tumor_rna_start - 1) - $variant_codon_pos - $self->{options}->{cdna_contextsize};
+          # warn "CDNA SLICE START " . $cdna_slice_start . "\n";
+          $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($cdna_slice_start < 0 ? 0 : $cdna_slice_start));
+
+          # if resulting peptide seq is too short, extend in 5' direction
           while (length($result{peptide_context_tumor}) < (2 * $self->{options}->{pepcontextsize} + 1) && $pepseq_start > 0) {
             $pepseq_start--;
-            $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start), -1);
+            $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
           }
+
+          # same for cdna seq; if resulting cdna seq is too short, extend in 5' direction
+          my $req_size = (2 * $self->{options}->{cdna_contextsize} + 3);
+          while (length($result{cdna_context_tumor}) < $req_size && $tumor_rna_start > 0) {
+            $tumor_rna_start--;
+            $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($tumor_rna_start < 0 ? 0 : $tumor_rna_start));
+          }
+
+          # cap stop codons
+          $result{peptide_context_tumor} =~ s/[*]$//;
+          $result{cdna_context_tumor} =~ s/(TAG$|TAA$|TGA$)//;
         } elsif ($v->{variant_classification} eq "insertion_inframe") {
           $result{aa_pos_tumor_start} = $tumor_pep_start + 1;
           $result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
