@@ -263,16 +263,9 @@ sub print_variant_context {
           $result{aa_pos_tumor_stop} = length($result{protein_seq_tumor});
 
           # where should peptide seq start?
-          my $pepseq_start = $tumor_pep_start - $self->{options}->{pepcontextsize} - 2; # -2 to correct for: 1-base $tumor_pep_start and trimming of stop codon
+          my $pepseq_start = ($tumor_pep_start - 1) - $self->{options}->{pepcontextsize} - 1; # correct for: 1-base $tumor_pep_start and trimming of stop
           # take substring from pepseq_start until end
           $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
-
-          # where should cdna seq start
-          # 0, 1 or 2, position of variant in codon (0-based)
-          my $variant_codon_pos = ($tumor_rna_start - 1) % 3;
-          my $cdna_slice_start = ($tumor_rna_start - 1) - $variant_codon_pos - $self->{options}->{cdna_contextsize};
-          # warn "CDNA SLICE START " . $cdna_slice_start . "\n";
-          $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($cdna_slice_start < 0 ? 0 : $cdna_slice_start));
 
           # if resulting peptide seq is too short, extend in 5' direction
           while (length($result{peptide_context_tumor}) < (2 * $self->{options}->{pepcontextsize} + 1) && $pepseq_start > 0) {
@@ -280,16 +273,26 @@ sub print_variant_context {
             $result{peptide_context_tumor} = substr($result{protein_seq_tumor}, ($pepseq_start < 0 ? 0 : $pepseq_start));
           }
 
-          # same for cdna seq; if resulting cdna seq is too short, extend in 5' direction
+          # trim stop
+          $result{peptide_context_tumor} =~ s/[*]$//;
+
+          # where should cdna seq start?
+          # 0, 1 or 2, position of variant in codon (0-based)
+          my $variant_codon_pos = ($tumor_rna_start - 1) % 3;
+          my $cdna_slice_start = ($tumor_rna_start - 1) - $variant_codon_pos - $self->{options}->{cdna_contextsize} - 3; # correct for: 1-base $tumor_rna_start and trimming of stop
+          # warn "CDNA SLICE START " . $cdna_slice_start . "\n";
+          $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($cdna_slice_start < 0 ? 0 : $cdna_slice_start));
+
+          # if resulting cdna seq is too short, extend in 5' direction
           my $req_size = (2 * $self->{options}->{cdna_contextsize} + 3);
           while (length($result{cdna_context_tumor}) < $req_size && $tumor_rna_start > 0) {
             $tumor_rna_start--;
             $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($tumor_rna_start < 0 ? 0 : $tumor_rna_start));
           }
 
-          # cap stop codons
-          $result{peptide_context_tumor} =~ s/[*]$//;
+          # trim stop codon
           $result{cdna_context_tumor} =~ s/(TAG$|TAA$|TGA$)//;
+          
         } elsif ($v->{variant_classification} eq "insertion_inframe") {
           $result{aa_pos_tumor_start} = $tumor_pep_start + 1;
           $result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
