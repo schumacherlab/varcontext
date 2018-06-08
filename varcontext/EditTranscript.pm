@@ -17,7 +17,7 @@ use EditSeq;
 # After applying edits to the mRNA sequence in the editseq sequence it has several methods that
 # allow getting pre/post-edit context sequence and converted positions.
 sub new {
-	my $class = shift;	
+	my $class = shift;
 	my $tr = shift;
 
 	croak("Need transcript object as arg1") unless ref($tr) eq "Bio::EnsEMBL::Transcript";
@@ -89,13 +89,13 @@ sub apply_edits {
 	# find the location of the (first) stop codon
 	# sometimes the reference sequence also lacks a stopcodon. If this is the case do not extend the
 	# tumor peptide sequence
-	my $stop = qr/(TAG|TAA|TGA)$/; 
+	my $stop = qr/(TAG|TAA|TGA)$/;
 	if ($self->{rna} =~ m/$stop/ && !($edited_rna =~  m/$stop/ && length($edited_rna) % 3 == 0)) {
 		#append genomic data until a stop is found in-frame
 		my $elongated_edited_rna = $self->_get_genomic_elongation($edited_rna);
 		$self->{transcript_extension} = (length($elongated_edited_rna) - length($edited_rna) > 0) ? length($elongated_edited_rna) - length($edited_rna) : 0;
 
-		# if stop lost is combined with an earlier stop gained it is possible that the 
+		# if stop lost is combined with an earlier stop gained it is possible that the
 		# extension value becomes < 0
 		$edited_rna = $elongated_edited_rna;
 	}
@@ -114,7 +114,7 @@ sub apply_edits {
 
 	$self->{applied_edits} = 1;
 }
-	
+
 sub _get_genomic_elongation {
 	my $self = shift;
 	my $seq = shift; #the current RNA sequence that we are going to elongate
@@ -194,7 +194,9 @@ sub get_rna_context_ref {
 
 	croak "Position out of range" unless $pos >= 0  && $pos < length($self->{rna});
 
-	my $start = $pos - $size - 1;
+  # make start fall on first position of codon
+  my $variant_codon_pos = $pos % 3;
+  my $start = $pos - $variant_codon_pos - $size;
 	$start = 0 if $start < 0;
 	return substr($self->{rna}, $start, $size * 2);
 }
@@ -209,9 +211,9 @@ sub get_rna_context_edit {
 
 	croak "Edits not yet applied" unless $self->{applied_edits};
 
-	my $start = $pos - $size - 1;
   # make start fall on first position of codon
-  $start = $start - ($start % 3);
+  my $variant_codon_pos = $pos % 3;
+  my $start = $pos - $variant_codon_pos - $size;
 	$start = 0 if $start < 0;
 	return substr($self->{edited_rna}, $start, $size * 2);
 }
@@ -228,7 +230,7 @@ sub get_protein_context_ref {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	
+
 	my $pepseq = substr($self->{ref_protein}, $start, $size * 2 + 1);
 
 	if (length($pepseq) < (2 * $size + 1) && substr($pepseq, -1) eq "*") {
@@ -254,7 +256,7 @@ sub get_protein_context_edit {
 
 	my $start = $pos - $size;
 	$start = 0 if $start < 0;
-	
+
 	my $pepseq = substr($self->{edited_protein}, $start, $size * 2 + 1);
 
 	if (length($pepseq) < (2 * $size + 1) && substr($pepseq, -1) eq "*") {
@@ -313,11 +315,11 @@ sub nmd_status {
 		foreach my $exon (@exons) {
 			$last_exon++;
 			if ( $t_strand eq 1 ){
-				last if ( $stop_site >= $exon->seq_region_start && $stop_site <= $exon->seq_region_end );	
+				last if ( $stop_site >= $exon->seq_region_start && $stop_site <= $exon->seq_region_end );
 			} elsif ( $t_strand eq -1 ) {
-				last if ( $start_site >= $exon->seq_region_start && $start_site <= $exon->seq_region_end );	
+				last if ( $start_site >= $exon->seq_region_start && $start_site <= $exon->seq_region_end );
 			}
-			
+
 		}
 
 		# rule 1 - check if PTC is within 100nt from start codon
