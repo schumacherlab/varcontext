@@ -173,7 +173,7 @@ sub print_variant_context {
 
   ## Print header
   ## extra_field_names are not loaded into %result (line 194)
-  print join("\t", @columns); 
+  print join("\t", @columns);
   if (scalar(@{$self->{extra_field_names}}) > 0) {
     print "\t" . join("\t", @{$self->{extra_field_names}}) . "\n";
   } else {
@@ -203,7 +203,7 @@ sub print_variant_context {
       my ($ref_rna_start, $ref_rna_end) = $v->map_to_transcriptid($tid);
       my $germline_rna_start = $es_germline->convert_position_to_edit($ref_rna_start);
       my $tumor_rna_start = $es_tumor->convert_position_to_edit($ref_rna_start);
-      
+
       if (defined $tumor_rna_start) {
         #it is still possible $germline_rna_start is undefined
 
@@ -274,12 +274,13 @@ sub print_variant_context {
           }
 
           # trim stop
+          my $n_del = $result{peptide_context_tumor} =~ m/[*]$/ ? 3 : 0;
           $result{peptide_context_tumor} =~ s/[*]$//;
 
           # where should cdna seq start?
           # 0, 1 or 2, position of variant in codon (0-based)
           my $variant_codon_pos = ($tumor_rna_start - 1) % 3;
-          my $cdna_slice_start = ($tumor_rna_start - 1) - $variant_codon_pos - $self->{options}->{cdna_contextsize} - 3; # correct for: 1-base $tumor_rna_start and trimming of stop
+          my $cdna_slice_start = ($tumor_rna_start - 1) - $variant_codon_pos - $self->{options}->{cdna_contextsize} - $n_del; # correct for: 1-base $tumor_rna_start and trimming of stop
           # warn "CDNA SLICE START " . $cdna_slice_start . "\n";
           $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($cdna_slice_start < 0 ? 0 : $cdna_slice_start));
 
@@ -292,7 +293,7 @@ sub print_variant_context {
 
           # trim stop codon
           $result{cdna_context_tumor} =~ s/(TAG$|TAA$|TGA$)//;
-          
+
         } elsif ($v->{variant_classification} eq "insertion_inframe") {
           $result{aa_pos_tumor_start} = $tumor_pep_start + 1;
           $result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
