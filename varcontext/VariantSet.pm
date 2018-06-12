@@ -284,16 +284,15 @@ sub print_variant_context {
           # warn "CDNA SLICE START " . $cdna_slice_start . "\n";
           $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($cdna_slice_start < 0 ? 0 : $cdna_slice_start));
 
+          # trim stop codon
+          $result{cdna_context_tumor} =~ s/(TAG$|TAA$|TGA$)//;
+
           # if resulting cdna seq is too short, extend in 5' direction
           my $req_size = (2 * $self->{options}->{cdna_contextsize} + 3);
           while (length($result{cdna_context_tumor}) < $req_size && $tumor_rna_start > 0) {
             $tumor_rna_start--;
             $result{cdna_context_tumor} = substr($es_tumor->{edited_rna}, ($tumor_rna_start < 0 ? 0 : $tumor_rna_start));
           }
-
-          # trim stop codon
-          $result{cdna_context_tumor} =~ s/(TAG$|TAA$|TGA$)//;
-
         } elsif ($v->{variant_classification} eq "insertion_inframe") {
           $result{aa_pos_tumor_start} = $tumor_pep_start + 1;
           $result{aa_pos_tumor_stop} = $tumor_pep_start + ((length($v->{alt_allele}) - length($v->{ref_allele})) / 3);
